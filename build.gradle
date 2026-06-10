@@ -125,6 +125,17 @@ dependencies {
             transitive = false // We only care about the 1 annotation class
         }
     }
+
+    implementation rfg.deobf("curse.maven:ae2-extended-life-570458:6302098")
+    implementation rfg.deobf ("curse.maven:baubles-227083:2518667")
+    implementation rfg.deobf ("curse.maven:thaumcraft-223628:2629023")
+    implementation rfg.deobf ("curse.maven:AE2FluidCraftReworkUnofficial-1404390:7742544")
+    implementation rfg.deobf ("curse.maven:ThaumicEnergistics-223666:2915506")
+    implementation rfg.deobf ("curse.maven:mmce-817377:7372951")
+    implementation rfg.deobf ("curse.maven:mmce-1111042:6840104")
+
+    implementation fileTree(dir: 'lib', include: ['*.jar'])
+
     if (propertyBool('use_asset_mover')) {
         implementation "com.cleanroommc:assetmover:${propertyString('asset_mover_version')}"
     }
