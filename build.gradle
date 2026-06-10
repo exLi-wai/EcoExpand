@@ -132,7 +132,7 @@ dependencies {
     implementation rfg.deobf ("curse.maven:AE2FluidCraftReworkUnofficial-1404390:7742544")
     implementation rfg.deobf ("curse.maven:ThaumicEnergistics-223666:2915506")
     implementation rfg.deobf ("curse.maven:mmce-817377:7372951")
-    implementation rfg.deobf ("curse.maven:mmce-1111042:6840104")
+    implementation rfg.deobf ("curse.maven:CrazyAE-1111042:6840104")
 
     implementation fileTree(dir: 'lib', include: ['*.jar'])
 
