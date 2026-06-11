@@ -133,6 +133,7 @@ dependencies {
     implementation rfg.deobf ("curse.maven:ThaumicEnergistics-223666:2915506")
     implementation rfg.deobf ("curse.maven:mmce-817377:7372951")
     implementation rfg.deobf ("curse.maven:CrazyAE-1111042:6840104")
+    implementation rfg.deobf("curse.maven:Botania-225643:3330934")
 
     implementation fileTree(dir: 'lib', include: ['*.jar'])
 
@@ -213,6 +214,7 @@ processResources {
 }
 
 jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
         def attribute_map = [:]
         if (propertyBool('is_coremod')) {
@@ -228,8 +230,21 @@ jar {
         if (propertyBool('use_access_transformer')) {
             attribute_map['FMLAT'] = propertyString('access_transformer_locations')
         }
+        if (propertyBool('use_mixins')) {
+            attribute_map['MixinConfigs'] = propertyStringList('mixin_configs').collect(config -> "mixins.${config}.json").join(',')
+        }
         attributes(attribute_map)
     }
+}
+
+tasks.register('copyProcessedResourcesToClasses', Copy) {
+    dependsOn tasks.named('compileJava'), tasks.named('processResources')
+    from(layout.buildDirectory.dir('resources/main'))
+    into(layout.buildDirectory.dir('classes/java/main'))
+}
+
+tasks.named('classes') {
+    dependsOn tasks.named('copyProcessedResourcesToClasses')
 }
 
 idea {
