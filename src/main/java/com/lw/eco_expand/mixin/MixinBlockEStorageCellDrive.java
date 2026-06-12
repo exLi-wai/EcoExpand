@@ -23,6 +23,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -33,13 +34,14 @@ import java.util.Set;
 @Mixin(value = BlockEStorageCellDrive.class, remap = false)
 public abstract class MixinBlockEStorageCellDrive {
 
+    @Unique
     private static final Set<String> LOGGED_RENDER_STATES = new HashSet<>();
 
-    @Inject(method = "getActualState", at = @At("HEAD"), cancellable = true)
-    private void ecoExpand$getActualState(final IBlockState state,
-                                          final IBlockAccess world,
-                                          final BlockPos pos,
-                                          final CallbackInfoReturnable<IBlockState> cir) {
+    @Inject(method = "func_176221_a", at = @At("HEAD"), cancellable = true, require = 1)
+    private void ecoExpand$getActualStateSrg(final IBlockState state,
+                                             final IBlockAccess world,
+                                             final BlockPos pos,
+                                             final CallbackInfoReturnable<IBlockState> cir) {
         final TileEntity te = world.getTileEntity(pos);
         if (!(te instanceof EStorageCellDrive)) {
             return;
@@ -54,7 +56,7 @@ public abstract class MixinBlockEStorageCellDrive {
             return;
         }
 
-        final ICellInventoryHandler<?> cellInventory = getCellInventory(stack, drive);
+        final ICellInventoryHandler<?> cellInventory = ecoExpand$getCellInventory(stack, drive);
         if (cellInventory == null) {
             logOnce("no_inventory:" + item.getRegistryName(),
                     "EStorage drive render: custom cell {} has no cell inventory. stack={}, pos={}",
@@ -63,7 +65,7 @@ public abstract class MixinBlockEStorageCellDrive {
         }
 
         final EStorageCell<?> cell = (EStorageCell<?>) item;
-        final DriveStorageType displayType = getDisplayType(item);
+        final DriveStorageType displayType = ecoExpand$getDisplayType(item);
         final DriveStorageCapacity capacity = EStorageCellDrive.getCapacity(cellInventory);
         final IBlockState renderedState = state.withProperty(DriveStorageLevel.STORAGE_LEVEL, cell.getLevel())
                 .withProperty(DriveStorageType.STORAGE_TYPE, displayType)
@@ -75,14 +77,14 @@ public abstract class MixinBlockEStorageCellDrive {
         cir.setReturnValue(renderedState);
     }
 
-    private static ICellInventoryHandler<?> getCellInventory(final ItemStack stack, final EStorageCellDrive drive) {
+    private static ICellInventoryHandler<?> ecoExpand$getCellInventory(final ItemStack stack, final EStorageCellDrive drive) {
         final EStorageCellHandler handler = EStorageCellHandler.getHandler(stack);
         if (handler == null) {
             return null;
         }
 
         for (final IStorageChannel<? extends IAEStack<?>> channel : AEApi.instance().storage().storageChannels()) {
-            final ICellInventoryHandler<?> cellInventory = getCellInventory(handler, stack, drive, channel);
+            final ICellInventoryHandler<?> cellInventory = ecoExpand$getCellInventory(handler, stack, drive, channel);
             if (cellInventory != null) {
                 return cellInventory;
             }
@@ -91,14 +93,14 @@ public abstract class MixinBlockEStorageCellDrive {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private static ICellInventoryHandler<?> getCellInventory(final EStorageCellHandler handler,
-                                                            final ItemStack stack,
-                                                            final EStorageCellDrive drive,
-                                                            final IStorageChannel<? extends IAEStack<?>> channel) {
+    private static ICellInventoryHandler<?> ecoExpand$getCellInventory(final EStorageCellHandler handler,
+                                                                       final ItemStack stack,
+                                                                       final EStorageCellDrive drive,
+                                                                       final IStorageChannel<? extends IAEStack<?>> channel) {
         return handler.getCellInventory(stack, drive, (IStorageChannel) channel);
     }
 
-    private static DriveStorageType getDisplayType(final Item item) {
+    private static DriveStorageType ecoExpand$getDisplayType(final Item item) {
         if (item instanceof EStorageCellEssentia) {
             return DriveStorageType.FLUID;
         }
