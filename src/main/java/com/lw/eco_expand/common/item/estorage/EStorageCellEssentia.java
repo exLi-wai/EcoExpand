@@ -29,7 +29,7 @@ public class EStorageCellEssentia extends EStorageCell<IAEEssentiaStack> {
 
     @Override
     public int getTotalTypes(@Nonnull final ItemStack cellItem) {
-        return 64;
+        return 100;
     }
 
     @Override
