@@ -1,24 +1,31 @@
 package com.lw.eco_expand.common.item.estorage;
 
 import appeng.api.AEApi;
+import appeng.api.storage.ISaveProvider;
 import appeng.api.storage.IStorageChannel;
 import appeng.api.storage.channels.IItemStorageChannel;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IAEStack;
+import com.lw.eco_expand.ECO_Expand;
 import com.lw.eco_expand.Tags;
 import com.lw.eco_expand.common.estorage.universal.UniversalStorageStats;
 import com.lw.eco_expand.common.estorage.universal.UniversalStorageDataManager;
 import com.lw.eco_expand.common.estorage.universal.UniversalStorageWorldData;
 import github.kasuminova.ecoaeextension.common.block.ecotech.estorage.prop.DriveStorageLevel;
 import github.kasuminova.ecoaeextension.common.item.estorage.EStorageCell;
+import github.kasuminova.ecoaeextension.common.tile.ecotech.estorage.EStorageCellDrive;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +33,7 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
 
     private static final String NBT_UUID = "eco_expand_universal_uuid";
     private static final String NBT_LEVEL_NAME = "eco_expand_universal_level";
+    private static final Object2ObjectMap<UUID, String> UUID_OWNERS = new Object2ObjectOpenHashMap<>();
     private static final int TYPES_L4 = 315;
     private static final int TYPES_L6 = 512;
     private static final int TYPES_L9 = 768;
@@ -72,6 +80,106 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
         final UUID uuid = UUID.randomUUID();
         tag.setUniqueId(NBT_UUID, uuid);
         return uuid;
+    }
+
+    public static UUID getOrCreateUuid(final ItemStack stack, final ISaveProvider saveProvider) {
+        final UUID uuid = getOrCreateUuid(stack);
+        final String owner = getOwnerKey(saveProvider);
+        if (owner == null) {
+            return uuid;
+        }
+
+        synchronized (UUID_OWNERS) {
+            final String existingOwner = UUID_OWNERS.get(uuid);
+            if (existingOwner == null || existingOwner.equals(owner) || !isOwnerStillHolding(existingOwner, uuid)) {
+                UUID_OWNERS.put(uuid, owner);
+                return uuid;
+            }
+
+            final UUID replacementUuid = UUID.randomUUID();
+            setUuid(stack, replacementUuid);
+            UUID_OWNERS.put(replacementUuid, owner);
+            ECO_Expand.LOGGER.warn("Universal EStorage cell duplicate UUID detected. oldUuid={}, oldOwner={}, newOwner={}, replacementUuid={}",
+                    uuid, existingOwner, owner, replacementUuid);
+            saveProvider.saveChanges(null);
+            return replacementUuid;
+        }
+    }
+
+    public static void releaseUuid(final ItemStack stack, final ISaveProvider saveProvider) {
+        if (stack.isEmpty() || !(stack.getItem() instanceof EStorageCellUniversal)) {
+            return;
+        }
+
+        final NBTTagCompound tag = stack.getTagCompound();
+        if (tag == null || !tag.hasUniqueId(NBT_UUID)) {
+            return;
+        }
+
+        final String owner = getOwnerKey(saveProvider);
+        if (owner == null) {
+            return;
+        }
+
+        final UUID uuid = tag.getUniqueId(NBT_UUID);
+        synchronized (UUID_OWNERS) {
+            if (owner.equals(UUID_OWNERS.get(uuid))) {
+                UUID_OWNERS.remove(uuid);
+            }
+        }
+    }
+
+    private static void setUuid(final ItemStack stack, final UUID uuid) {
+        NBTTagCompound tag = stack.getTagCompound();
+        if (tag == null) {
+            tag = new NBTTagCompound();
+            stack.setTagCompound(tag);
+        }
+        tag.setUniqueId(NBT_UUID, uuid);
+    }
+
+    @Nullable
+    private static String getOwnerKey(final ISaveProvider saveProvider) {
+        if (saveProvider instanceof TileEntity) {
+            final TileEntity tile = (TileEntity) saveProvider;
+            final World world = tile.getWorld();
+            final BlockPos pos = tile.getPos();
+            if (world != null && pos != null) {
+                return world.provider.getDimension() + ":" + pos.toLong();
+            }
+        }
+        return null;
+    }
+
+    private static boolean isOwnerStillHolding(final String owner, final UUID uuid) {
+        final String[] parts = owner.split(":", 2);
+        if (parts.length != 2) {
+            return false;
+        }
+
+        try {
+            final int dimension = Integer.parseInt(parts[0]);
+            final long posLong = Long.parseLong(parts[1]);
+            final World world = net.minecraftforge.common.DimensionManager.getWorld(dimension);
+            if (world == null) {
+                return false;
+            }
+
+            final TileEntity tile = world.getTileEntity(BlockPos.fromLong(posLong));
+            if (!(tile instanceof EStorageCellDrive)) {
+                return false;
+            }
+
+            final ItemStack stack = ((EStorageCellDrive) tile).getDriveInv().getStackInSlot(0);
+            final NBTTagCompound tag = stack.getTagCompound();
+            return !stack.isEmpty()
+                    && stack.getItem() instanceof EStorageCellUniversal
+                    && tag != null
+                    && tag.hasUniqueId(NBT_UUID)
+                    && uuid.equals(tag.getUniqueId(NBT_UUID));
+        } catch (final RuntimeException ignored) {
+            return false;
+        }
     }
 
     public String getCapacityName() {

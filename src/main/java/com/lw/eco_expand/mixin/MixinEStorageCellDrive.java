@@ -75,6 +75,7 @@ public abstract class MixinEStorageCellDrive {
         }
 
         ECO_Expand$postRemovalChanges(removedStack);
+        EStorageCellUniversal.releaseUuid(removedStack, (EStorageCellDrive) (Object) this);
     }
 
     @Inject(method = "getHandler", at = @At("HEAD"), cancellable = true)

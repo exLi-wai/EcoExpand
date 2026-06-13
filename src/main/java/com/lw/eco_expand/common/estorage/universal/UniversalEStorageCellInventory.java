@@ -36,7 +36,7 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
         this.saveProvider = saveProvider;
         this.channel = channel;
         this.type = type;
-        this.uuid = EStorageCellUniversal.getOrCreateUuid(container);
+        this.uuid = EStorageCellUniversal.getOrCreateUuid(container, saveProvider);
     }
 
     @Override
