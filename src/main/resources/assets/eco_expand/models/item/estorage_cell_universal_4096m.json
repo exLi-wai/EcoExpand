@@ -1,0 +1,7 @@
+﻿{
+    "parent":  "item/generated",
+    "textures":  {
+                     "layer0":  "eco_expand:items/estorage_cell_disks_d5_universal_4096m",
+                     "layer1":  "eco_expand:items/bloom/estorage_cell_disks_d5_universal_4096m"
+                 }
+}

@@ -252,10 +252,10 @@
                           "when":  {
                                        "facing":  "north",
                                        "storage_level":  "c",
-                                       "storage_type":  "universal_2048m"
+                                           "storage_type":  "universal_4096m"
                                    },
                           "apply":  {
-                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_2048m"
+                                             "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_4096m"
                                     }
                       },
                       {
@@ -469,10 +469,10 @@
                           "when":  {
                                        "facing":  "south",
                                        "storage_level":  "c",
-                                       "storage_type":  "universal_2048m"
+                                           "storage_type":  "universal_4096m"
                                    },
                           "apply":  {
-                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_2048m",
+                                             "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_4096m",
                                         "y":  180
                                     }
                       },
@@ -689,10 +689,10 @@
                           "when":  {
                                        "facing":  "west",
                                        "storage_level":  "c",
-                                       "storage_type":  "universal_2048m"
+                                           "storage_type":  "universal_4096m"
                                    },
                           "apply":  {
-                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_2048m",
+                                             "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_4096m",
                                         "y":  270
                                     }
                       },
@@ -909,10 +909,10 @@
                           "when":  {
                                        "facing":  "east",
                                        "storage_level":  "c",
-                                       "storage_type":  "universal_2048m"
+                                           "storage_type":  "universal_4096m"
                                    },
                           "apply":  {
-                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_2048m",
+                                             "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_4096m",
                                         "y":  90
                                     }
                       },

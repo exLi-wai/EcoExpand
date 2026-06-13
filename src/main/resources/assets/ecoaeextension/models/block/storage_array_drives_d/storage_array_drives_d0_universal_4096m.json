@@ -2,8 +2,8 @@
     "credit": "Made with Blockbench",
     "textures": {
         "1": "ecoaeextension:blocks/0",
-        "2": "ecoaeextension:blocks/bloom/storage_array_drives_d0_off_universal_2048m",
-        "6": "ecoaeextension:blocks/storage_array_drives_d0_off_universal_2048m",
+        "2": "ecoaeextension:blocks/bloom/storage_array_drives_d0_off_universal_4096m",
+        "6": "ecoaeextension:blocks/storage_array_drives_d0_off_universal_4096m",
         "particle": "ecoaeextension:blocks/0"
     },
     "elements": [

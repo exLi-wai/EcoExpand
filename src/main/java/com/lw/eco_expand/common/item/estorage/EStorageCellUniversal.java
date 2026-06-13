@@ -39,14 +39,14 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
     private static final int TYPES_L6 = 512;
     private static final int TYPES_L9 = 768;
     private static final int TYPES_LE12 = 1024;
-    private static final int TYPES_LE15 = 2048;
+    private static final int TYPES_LE15 = 4096;
     private static final int TYPES_INFINITE = Integer.MAX_VALUE;
 
     public static final EStorageCellUniversal LEVEL_L4 = new EStorageCellUniversal("16m", "le4", DriveStorageLevel.A, 16, 4, TYPES_L4);
     public static final EStorageCellUniversal LEVEL_L6 = new EStorageCellUniversal("64m", "le6", DriveStorageLevel.B, 64, 16, TYPES_L6);
     public static final EStorageCellUniversal LEVEL_L9 = new EStorageCellUniversal("256m", "le9", DriveStorageLevel.C, 256, 64, TYPES_L9);
     public static final EStorageCellUniversal LEVEL_L12 = new EStorageCellUniversal("1024m", "le12", DriveStorageLevel.C, 1024, 256, TYPES_LE12);
-    public static final EStorageCellUniversal LEVEL_L15 = new EStorageCellUniversal("2048m", "le15", DriveStorageLevel.C, 2048, 256, TYPES_LE15);
+    public static final EStorageCellUniversal LEVEL_L15 = new EStorageCellUniversal("4096m", "le15", DriveStorageLevel.C, 4096, 256, TYPES_LE15);
     public static final EStorageCellUniversal LEVEL_INFINITE = new EStorageCellUniversal("inf", "inf", DriveStorageLevel.C, 2048, 256, TYPES_INFINITE, Long.MAX_VALUE);
 
     private final String capacityName;

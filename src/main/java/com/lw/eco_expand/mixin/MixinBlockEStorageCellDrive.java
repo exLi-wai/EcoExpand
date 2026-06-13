@@ -58,7 +58,7 @@ public abstract class MixinBlockEStorageCellDrive {
     private static final String ECO_EXPAND$UNIVERSAL_1024M_STORAGE_TYPE = "UNIVERSAL_1024M";
 
     @Unique
-    private static final String ECO_EXPAND$UNIVERSAL_2048M_STORAGE_TYPE = "UNIVERSAL_2048M";
+    private static final String ECO_EXPAND$UNIVERSAL_4096M_STORAGE_TYPE = "UNIVERSAL_4096M";
 
     @Unique
     private static final String ECO_EXPAND$UNIVERSAL_INF_STORAGE_TYPE = "UNIVERSAL_INF";
@@ -145,8 +145,8 @@ public abstract class MixinBlockEStorageCellDrive {
             if ("1024m".equals(universal.getCapacityName())) {
                 return DriveStorageType.valueOf(ECO_EXPAND$UNIVERSAL_1024M_STORAGE_TYPE);
             }
-            if ("2048m".equals(universal.getCapacityName())) {
-                return DriveStorageType.valueOf(ECO_EXPAND$UNIVERSAL_2048M_STORAGE_TYPE);
+            if ("4096m".equals(universal.getCapacityName())) {
+                return DriveStorageType.valueOf(ECO_EXPAND$UNIVERSAL_4096M_STORAGE_TYPE);
             }
             if ("inf".equals(universal.getCapacityName())) {
                 return DriveStorageType.valueOf(ECO_EXPAND$UNIVERSAL_INF_STORAGE_TYPE);

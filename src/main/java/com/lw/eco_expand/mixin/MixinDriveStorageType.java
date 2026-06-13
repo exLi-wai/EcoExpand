@@ -24,7 +24,7 @@ public abstract class MixinDriveStorageType {
             {"UNIVERSAL_64M", "universal_64m"},
             {"UNIVERSAL_256M", "universal_256m"},
             {"UNIVERSAL_1024M", "universal_1024m"},
-            {"UNIVERSAL_2048M", "universal_2048m"},
+            {"UNIVERSAL_4096M", "universal_4096m"},
             {"UNIVERSAL_INF", "universal_inf"}
     };
 
