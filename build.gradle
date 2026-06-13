@@ -134,6 +134,9 @@ dependencies {
     implementation rfg.deobf ("curse.maven:mmce-817377:7372951")
     implementation rfg.deobf ("curse.maven:CrazyAE-1111042:6840104")
     implementation rfg.deobf("curse.maven:Botania-225643:3330934")
+    implementation rfg.deobf("curse.maven:mek-840735:8147536")
+    implementation rfg.deobf("curse.maven:MekanismEnergistics-1027681:5775101")
+    implementation rfg.deobf("curse.maven:theoneprobe-245211:2667280")
 
     implementation fileTree(dir: 'lib', include: ['*.jar'])
 

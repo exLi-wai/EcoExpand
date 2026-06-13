@@ -7,3 +7,7 @@ item.eco_expand.estorage_cell_mana_256m.name=§9ECO - §bLE9 §9Storage Matrix (
 item.eco_expand.estorage_cell_essentia_16m.name=§9ECO - §bLE4 §9Storage Matrix (Essentia)
 item.eco_expand.estorage_cell_essentia_64m.name=§9ECO - §bLE6 §9Storage Matrix (Essentia)
 item.eco_expand.estorage_cell_essentia_256m.name=§9ECO - §bLE9 §9Storage Matrix (Essentia)
+item.eco_expand.estorage_cell_universal_16m.name=§9ECO - §bLE4 §9Universal Storage Matrix
+item.eco_expand.estorage_cell_universal_64m.name=§9ECO - §6LE6 §9Universal Storage Matrix
+item.eco_expand.estorage_cell_universal_256m.name=§9ECO - §5LE9 §9Universal Storage Matrix
+item.eco_expand.estorage_cell_universal_1024m.name=§9ECO - §dLE12 §9Universal Storage Matrix
