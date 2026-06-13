@@ -4,7 +4,6 @@ import appeng.api.AEApi;
 import appeng.api.storage.ICellInventoryHandler;
 import appeng.api.storage.IStorageChannel;
 import appeng.api.storage.data.IAEStack;
-import com.lw.eco_expand.ECO_Expand;
 import com.lw.eco_expand.common.item.estorage.EStorageCellEnergy;
 import com.lw.eco_expand.common.item.estorage.EStorageCellEssentia;
 import com.lw.eco_expand.common.item.estorage.EStorageCellMana;
@@ -28,14 +27,17 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Mixin(value = BlockEStorageCellDrive.class, remap = false)
 public abstract class MixinBlockEStorageCellDrive {
 
     @Unique
-    private static final Set<String> LOGGED_RENDER_STATES = new HashSet<>();
+    private static final String ECO_EXPAND$ENERGY_STORAGE_TYPE = "ENERGY";
+
+    @Unique
+    private static final String ECO_EXPAND$MANA_STORAGE_TYPE = "MANA";
+
+    @Unique
+    private static final String ECO_EXPAND$ESSENTIA_STORAGE_TYPE = "ESSENTIA";
 
     @Inject(method = "func_176221_a", at = @At("HEAD"), cancellable = true, require = 1)
     private void ecoExpand$getActualStateSrg(final IBlockState state,
@@ -58,9 +60,6 @@ public abstract class MixinBlockEStorageCellDrive {
 
         final ICellInventoryHandler<?> cellInventory = ecoExpand$getCellInventory(stack, drive);
         if (cellInventory == null) {
-            logOnce("no_inventory:" + item.getRegistryName(),
-                    "EStorage drive render: custom cell {} has no cell inventory. stack={}, pos={}",
-                    item.getRegistryName(), stack, pos);
             return;
         }
 
@@ -71,9 +70,6 @@ public abstract class MixinBlockEStorageCellDrive {
                 .withProperty(DriveStorageType.STORAGE_TYPE, displayType)
                 .withProperty(DriveStatus.STATUS, drive.isWriting() ? DriveStatus.RUN : DriveStatus.IDLE)
                 .withProperty(DriveStorageCapacity.STORAGE_CAPACITY, capacity);
-        logOnce("render:" + item.getRegistryName() + ":" + cell.getLevel() + ":" + displayType + ":" + capacity,
-                "EStorage drive render: custom cell {} mapped to level={}, type={}, capacity={}, pos={}",
-                item.getRegistryName(), cell.getLevel(), displayType, capacity, pos);
         cir.setReturnValue(renderedState);
     }
 
@@ -102,14 +98,14 @@ public abstract class MixinBlockEStorageCellDrive {
 
     private static DriveStorageType ecoExpand$getDisplayType(final Item item) {
         if (item instanceof EStorageCellEssentia) {
-            return DriveStorageType.FLUID;
+            return DriveStorageType.valueOf(ECO_EXPAND$ESSENTIA_STORAGE_TYPE);
+        }
+        if (item instanceof EStorageCellEnergy) {
+            return DriveStorageType.valueOf(ECO_EXPAND$ENERGY_STORAGE_TYPE);
+        }
+        if (item instanceof EStorageCellMana) {
+            return DriveStorageType.valueOf(ECO_EXPAND$MANA_STORAGE_TYPE);
         }
         return DriveStorageType.ITEM;
-    }
-
-    private static void logOnce(final String key, final String message, final Object... args) {
-        if (LOGGED_RENDER_STATES.add(key)) {
-            ECO_Expand.LOGGER.info(message, args);
-        }
     }
 }

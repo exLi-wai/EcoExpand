@@ -1,7 +1,7 @@
 ﻿{
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "ecoaeextension:items/estorage_cell_disks_a3_fluid_16m",
-    "layer1": "ecoaeextension:items/bloom/estorage_cell_disks_a3_fluid_16m"
-  }
+    "parent":  "item/generated",
+    "textures":  {
+                     "layer0":  "eco_expand:items/estorage_cell_disks_a3_essentia_16m",
+                     "layer1":  "eco_expand:items/bloom/estorage_cell_disks_a3_essentia_16m"
+                 }
 }
