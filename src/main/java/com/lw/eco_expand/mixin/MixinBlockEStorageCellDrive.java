@@ -7,6 +7,8 @@ import appeng.api.storage.data.IAEStack;
 import com.lw.eco_expand.common.item.estorage.EStorageCellEnergy;
 import com.lw.eco_expand.common.item.estorage.EStorageCellEssentia;
 import com.lw.eco_expand.common.item.estorage.EStorageCellMana;
+import com.lw.eco_expand.common.item.estorage.EStorageCellUniversal;
+import com.lw.eco_expand.common.estorage.universal.UniversalStorageStats;
 import github.kasuminova.ecoaeextension.common.block.ecotech.estorage.BlockEStorageCellDrive;
 import github.kasuminova.ecoaeextension.common.block.ecotech.estorage.prop.DriveStatus;
 import github.kasuminova.ecoaeextension.common.block.ecotech.estorage.prop.DriveStorageCapacity;
@@ -40,10 +42,7 @@ public abstract class MixinBlockEStorageCellDrive {
     private static final String ECO_EXPAND$ESSENTIA_STORAGE_TYPE = "ESSENTIA";
 
     @Inject(method = "func_176221_a", at = @At("HEAD"), cancellable = true, require = 1)
-    private void ecoExpand$getActualStateSrg(final IBlockState state,
-                                             final IBlockAccess world,
-                                             final BlockPos pos,
-                                             final CallbackInfoReturnable<IBlockState> cir) {
+    private void ecoExpand$getActualStateSrg(final IBlockState state, final IBlockAccess world, final BlockPos pos, final CallbackInfoReturnable<IBlockState> cir) {
         final TileEntity te = world.getTileEntity(pos);
         if (!(te instanceof EStorageCellDrive)) {
             return;
@@ -54,18 +53,14 @@ public abstract class MixinBlockEStorageCellDrive {
         final Item item = stack.getItem();
         if (!(item instanceof EStorageCellEnergy)
                 && !(item instanceof EStorageCellMana)
-                && !(item instanceof EStorageCellEssentia)) {
-            return;
-        }
-
-        final ICellInventoryHandler<?> cellInventory = ecoExpand$getCellInventory(stack, drive);
-        if (cellInventory == null) {
+                && !(item instanceof EStorageCellEssentia)
+                && !(item instanceof EStorageCellUniversal)) {
             return;
         }
 
         final EStorageCell<?> cell = (EStorageCell<?>) item;
-        final DriveStorageType displayType = ecoExpand$getDisplayType(item);
-        final DriveStorageCapacity capacity = EStorageCellDrive.getCapacity(cellInventory);
+        final DriveStorageType displayType = ECO_Expand$getDisplayType(item);
+        final DriveStorageCapacity capacity = ECO_Expand$getCapacity(stack, drive, item);
         final IBlockState renderedState = state.withProperty(DriveStorageLevel.STORAGE_LEVEL, cell.getLevel())
                 .withProperty(DriveStorageType.STORAGE_TYPE, displayType)
                 .withProperty(DriveStatus.STATUS, drive.isWriting() ? DriveStatus.RUN : DriveStatus.IDLE)
@@ -73,14 +68,15 @@ public abstract class MixinBlockEStorageCellDrive {
         cir.setReturnValue(renderedState);
     }
 
-    private static ICellInventoryHandler<?> ecoExpand$getCellInventory(final ItemStack stack, final EStorageCellDrive drive) {
+    @Unique
+    private static ICellInventoryHandler<?> ECO_Expand$getCellInventory(final ItemStack stack, final EStorageCellDrive drive) {
         final EStorageCellHandler handler = EStorageCellHandler.getHandler(stack);
         if (handler == null) {
             return null;
         }
 
         for (final IStorageChannel<? extends IAEStack<?>> channel : AEApi.instance().storage().storageChannels()) {
-            final ICellInventoryHandler<?> cellInventory = ecoExpand$getCellInventory(handler, stack, drive, channel);
+            final ICellInventoryHandler<?> cellInventory = ECO_Expand$getCellInventory(handler, stack, drive, channel);
             if (cellInventory != null) {
                 return cellInventory;
             }
@@ -88,15 +84,17 @@ public abstract class MixinBlockEStorageCellDrive {
         return null;
     }
 
+    @Unique
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private static ICellInventoryHandler<?> ecoExpand$getCellInventory(final EStorageCellHandler handler,
+    private static ICellInventoryHandler<?> ECO_Expand$getCellInventory(final EStorageCellHandler handler,
                                                                        final ItemStack stack,
                                                                        final EStorageCellDrive drive,
                                                                        final IStorageChannel<? extends IAEStack<?>> channel) {
         return handler.getCellInventory(stack, drive, (IStorageChannel) channel);
     }
 
-    private static DriveStorageType ecoExpand$getDisplayType(final Item item) {
+    @Unique
+    private static DriveStorageType ECO_Expand$getDisplayType(final Item item) {
         if (item instanceof EStorageCellEssentia) {
             return DriveStorageType.valueOf(ECO_EXPAND$ESSENTIA_STORAGE_TYPE);
         }
@@ -107,5 +105,31 @@ public abstract class MixinBlockEStorageCellDrive {
             return DriveStorageType.valueOf(ECO_EXPAND$MANA_STORAGE_TYPE);
         }
         return DriveStorageType.ITEM;
+    }
+
+    @Unique
+    private static DriveStorageCapacity ECO_Expand$getCapacity(final ItemStack stack,
+                                                              final EStorageCellDrive drive,
+                                                              final Item item) {
+        if (item instanceof EStorageCellUniversal) {
+            final EStorageCellUniversal universal = (EStorageCellUniversal) item;
+            final UniversalStorageStats stats = universal.getStats(stack, drive.getWorld());
+            if (stats.types() <= 0) {
+                return DriveStorageCapacity.EMPTY;
+            }
+            if (stats.usedBytes() >= universal.getTotalBytesLong(stack)) {
+                return DriveStorageCapacity.FULL;
+            }
+            if (stats.types() >= universal.getTotalTypes(stack)) {
+                return DriveStorageCapacity.TYPE_MAX;
+            }
+            return DriveStorageCapacity.EMPTY;
+        }
+
+        final ICellInventoryHandler<?> cellInventory = ECO_Expand$getCellInventory(stack, drive);
+        if (cellInventory == null) {
+            return DriveStorageCapacity.EMPTY;
+        }
+        return EStorageCellDrive.getCapacity(cellInventory);
     }
 }

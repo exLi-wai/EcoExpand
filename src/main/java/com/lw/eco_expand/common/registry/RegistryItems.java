@@ -4,6 +4,7 @@ import com.lw.eco_expand.ECO_Expand;
 import com.lw.eco_expand.common.item.estorage.EStorageCellEnergy;
 import com.lw.eco_expand.common.item.estorage.EStorageCellEssentia;
 import com.lw.eco_expand.common.item.estorage.EStorageCellMana;
+import com.lw.eco_expand.common.item.estorage.EStorageCellUniversal;
 import net.minecraft.item.Item;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -21,7 +22,13 @@ public final class RegistryItems {
             EStorageCellMana.LEVEL_L9,
             EStorageCellEssentia.LEVEL_L4,
             EStorageCellEssentia.LEVEL_L6,
-            EStorageCellEssentia.LEVEL_L9
+            EStorageCellEssentia.LEVEL_L9,
+            EStorageCellUniversal.LEVEL_L4,
+            EStorageCellUniversal.LEVEL_L6,
+            EStorageCellUniversal.LEVEL_L9,
+            EStorageCellUniversal.LEVEL_L12,
+            EStorageCellUniversal.LEVEL_L15,
+            EStorageCellUniversal.LEVEL_INFINITE
     };
 
     @SubscribeEvent
