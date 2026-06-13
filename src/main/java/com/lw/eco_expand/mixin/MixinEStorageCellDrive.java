@@ -14,6 +14,7 @@ import appeng.tile.inventory.AppEngCellInventory;
 import appeng.util.inv.InvOperation;
 import com.lw.eco_expand.ECO_Expand;
 import com.lw.eco_expand.common.item.estorage.EStorageCellUniversal;
+import github.kasuminova.ecoaeextension.common.block.ecotech.estorage.prop.DriveStorageLevel;
 import github.kasuminova.ecoaeextension.common.estorage.ECellDriveWatcher;
 import github.kasuminova.ecoaeextension.common.estorage.EStorageCellHandler;
 import github.kasuminova.ecoaeextension.common.tile.ecotech.estorage.EStorageCellDrive;
@@ -61,15 +62,13 @@ public abstract class MixinEStorageCellDrive {
     public abstract void updateDriveBlockState();
 
     @Shadow
+    public abstract boolean isCellSupported(DriveStorageLevel level);
+
+    @Shadow
     protected abstract void updateHandler(boolean refreshState);
 
     @Inject(method = "onChangeInventory", at = @At("RETURN"))
-    private void ECO_Expand$postUniversalCellRemoval(final IItemHandler inv,
-                                                     final int slot,
-                                                     final InvOperation operation,
-                                                     final ItemStack removedStack,
-                                                     final ItemStack newStack,
-                                                     final CallbackInfo ci) {
+    private void ECO_Expand$postUniversalCellRemoval(final IItemHandler inv, final int slot, final InvOperation operation, final ItemStack removedStack, final ItemStack newStack, final CallbackInfo ci) {
         if (slot != 0 || removedStack.isEmpty() || !(removedStack.getItem() instanceof EStorageCellUniversal) || !newStack.isEmpty()) {
             return;
         }
@@ -83,6 +82,10 @@ public abstract class MixinEStorageCellDrive {
                                                                        final CallbackInfoReturnable<IMEInventoryHandler<T>> cir) {
         final ItemStack stack = driveInv.getStackInSlot(0);
         if (!(stack.getItem() instanceof EStorageCellUniversal)) {
+            return;
+        }
+        if (!isCellSupported(((EStorageCellUniversal) stack.getItem()).getLevel())) {
+            cir.setReturnValue(null);
             return;
         }
 
@@ -107,6 +110,17 @@ public abstract class MixinEStorageCellDrive {
 
         final ItemStack stack = driveInv.getStackInSlot(0);
         if (!(stack.getItem() instanceof EStorageCellUniversal)) {
+            return;
+        }
+        if (!isCellSupported(((EStorageCellUniversal) stack.getItem()).getLevel())) {
+            watcher = null;
+            cellHandler = null;
+            ECO_Expand$getInventoryHandlers().clear();
+            isCached = true;
+            if (refreshState) {
+                updateDriveBlockState();
+            }
+            ci.cancel();
             return;
         }
 
