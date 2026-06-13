@@ -6,12 +6,15 @@ import com.lw.eco_expand.common.registry.RegistryItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.client.resources.FallbackResourceManager;
+import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourcePack;
 import net.minecraft.client.resources.SimpleReloadableResourceManager;
 import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.client.event.ModelBakeEvent;
 import net.minecraftforge.client.event.ModelRegistryEvent;
+import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -26,10 +29,11 @@ import java.util.Map;
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID, value = Side.CLIENT)
 public final class ClientRegistry {
 
-    private static boolean prioritizedEcoAeResources = false;
+    private static boolean registeredReloadListener = false;
 
     @SubscribeEvent
     public static void registerModels(final ModelRegistryEvent event) {
+        registerEcoAeResourcePriorityReloadListener();
         prioritizeEcoExpandEcoAeResources();
         for (final Item item : RegistryItems.STORAGE_CELLS) {
             final ResourceLocation registryName = Objects.requireNonNull(item.getRegistryName());
@@ -37,12 +41,34 @@ public final class ClientRegistry {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static void prioritizeEcoExpandEcoAeResources() {
-        if (prioritizedEcoAeResources) {
+    @SubscribeEvent
+    public static void onTextureStitchPre(final TextureStitchEvent.Pre event) {
+        prioritizeEcoExpandEcoAeResources();
+    }
+
+    private static void registerEcoAeResourcePriorityReloadListener() {
+        if (registeredReloadListener) {
             return;
         }
 
+        final IResourceManager resourceManager = Minecraft.getMinecraft().getResourceManager();
+        if (!(resourceManager instanceof IReloadableResourceManager)) {
+            ECO_Expand.LOGGER.warn("Cannot register ECO AE resource priority listener: unexpected resource manager {}",
+                    resourceManager.getClass().getName());
+            return;
+        }
+
+        ((IReloadableResourceManager) resourceManager).registerReloadListener(manager -> prioritizeEcoExpandEcoAeResources());
+        registeredReloadListener = true;
+    }
+
+    @SubscribeEvent
+    public static void onModelBake(final ModelBakeEvent event) {
+        prioritizeEcoExpandEcoAeResources();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void prioritizeEcoExpandEcoAeResources() {
         final IResourceManager resourceManager = Minecraft.getMinecraft().getResourceManager();
         if (!(resourceManager instanceof SimpleReloadableResourceManager)) {
             ECO_Expand.LOGGER.warn("Cannot prioritize ECO AE resources: unexpected resource manager {}",
@@ -79,7 +105,7 @@ public final class ClientRegistry {
             }
 
             resourcePacks.addAll(ecoExpandPacks);
-            prioritizedEcoAeResources = true;
+            ECO_Expand.LOGGER.info("Prioritized ECO Expand resources for ecoaeextension domain");
         } catch (final ReflectiveOperationException | ClassCastException e) {
             ECO_Expand.LOGGER.error("Failed to prioritize ECO AE resources", e);
         }

@@ -242,6 +242,26 @@
                           "when":  {
                                        "facing":  "north",
                                        "storage_level":  "c",
+                                       "storage_type":  "universal_1024m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_1024m"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "north",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_2048m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_2048m"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "north",
+                                       "storage_level":  "c",
                                        "storage_type":  "fluid"
                                    },
                           "apply":  {
@@ -438,6 +458,28 @@
                           "when":  {
                                        "facing":  "south",
                                        "storage_level":  "c",
+                                       "storage_type":  "universal_1024m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_1024m",
+                                        "y":  180
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "south",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_2048m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_2048m",
+                                        "y":  180
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "south",
+                                       "storage_level":  "c",
                                        "storage_type":  "fluid"
                                    },
                           "apply":  {
@@ -636,6 +678,28 @@
                           "when":  {
                                        "facing":  "west",
                                        "storage_level":  "c",
+                                       "storage_type":  "universal_1024m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_1024m",
+                                        "y":  270
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "west",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_2048m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_2048m",
+                                        "y":  270
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "west",
+                                       "storage_level":  "c",
                                        "storage_type":  "fluid"
                                    },
                           "apply":  {
@@ -827,6 +891,28 @@
                                    },
                           "apply":  {
                                         "model":  "ecoaeextension:storage_array_drives_c/storage_array_drives_c0_essentia",
+                                        "y":  90
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "east",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_1024m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_1024m",
+                                        "y":  90
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "east",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_2048m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_2048m",
                                         "y":  90
                                     }
                       },
@@ -1064,6 +1150,178 @@
                                    },
                           "apply":  {
                                         "model":  "ecoaeextension:led/array_disks_on_red",
+                                        "y":  90
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "north",
+                                       "storage_level":  "a",
+                                       "storage_type":  "universal_16m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_16m"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "north",
+                                       "storage_level":  "b",
+                                       "storage_type":  "universal_64m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_64m"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "north",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_256m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_256m"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "north",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_inf"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_inf"
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "south",
+                                       "storage_level":  "a",
+                                       "storage_type":  "universal_16m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_16m",
+                                        "y":  180
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "south",
+                                       "storage_level":  "b",
+                                       "storage_type":  "universal_64m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_64m",
+                                        "y":  180
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "south",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_256m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_256m",
+                                        "y":  180
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "south",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_inf"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_inf",
+                                        "y":  180
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "west",
+                                       "storage_level":  "a",
+                                       "storage_type":  "universal_16m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_16m",
+                                        "y":  270
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "west",
+                                       "storage_level":  "b",
+                                       "storage_type":  "universal_64m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_64m",
+                                        "y":  270
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "west",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_256m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_256m",
+                                        "y":  270
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "west",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_inf"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_inf",
+                                        "y":  270
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "east",
+                                       "storage_level":  "a",
+                                       "storage_type":  "universal_16m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_16m",
+                                        "y":  90
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "east",
+                                       "storage_level":  "b",
+                                       "storage_type":  "universal_64m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_64m",
+                                        "y":  90
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "east",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_256m"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_256m",
+                                        "y":  90
+                                    }
+                      },
+                      {
+                          "when":  {
+                                       "facing":  "east",
+                                       "storage_level":  "c",
+                                       "storage_type":  "universal_inf"
+                                   },
+                          "apply":  {
+                                        "model":  "ecoaeextension:storage_array_drives_d/storage_array_drives_d0_universal_inf",
                                         "y":  90
                                     }
                       }

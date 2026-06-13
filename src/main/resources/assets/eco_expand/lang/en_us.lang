@@ -13,3 +13,5 @@ item.eco_expand.estorage_cell_universal_256m.name=§9ECO - §5LE9 §9Universal S
 item.eco_expand.estorage_cell_universal_1024m.name=§9ECO - §dLE12 §9Universal Storage Matrix
 item.eco_expand.estorage_cell_universal_2048m.name=§9ECO - §dLE15 §9Universal Storage Matrix
 item.eco_expand.estorage_cell_universal_inf.name=§9ECO - §dINF §9Universal Storage Matrix
+tooltip.eco_expand.universal.types=Universal Types: %s / %s
+tooltip.eco_expand.universal.bytes=Universal Bytes: %s / %s

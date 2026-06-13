@@ -19,7 +19,13 @@ public abstract class MixinDriveStorageType {
     private static final String[][] ECO_EXPAND$EXTRA_TYPES = {
             {"ENERGY", "energy"},
             {"MANA", "mana"},
-            {"ESSENTIA", "essentia"}
+            {"ESSENTIA", "essentia"},
+            {"UNIVERSAL_16M", "universal_16m"},
+            {"UNIVERSAL_64M", "universal_64m"},
+            {"UNIVERSAL_256M", "universal_256m"},
+            {"UNIVERSAL_1024M", "universal_1024m"},
+            {"UNIVERSAL_2048M", "universal_2048m"},
+            {"UNIVERSAL_INF", "universal_inf"}
     };
 
     @Shadow
