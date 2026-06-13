@@ -69,7 +69,7 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
         if (available <= 0) {
             logRejectOnce("byte_full:" + type + ":" + cell.getRegistryName(),
                     "Universal cell reject insert: no bytes type={}, usedBytes={}, totalBytes={}, stack={}",
-                    type, stats.usedBytes(), cell.getBytes(container), input);
+                    type, stats.usedBytes(), cell.getTotalBytesLong(container), input);
             return input;
         }
 
@@ -185,14 +185,24 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
     }
 
     private long getAvailableToInsert(final long requested, final boolean newType, final UniversalStorageStats stats) {
-        final long typeCost = newType ? cell.getBytesPerType(container) : 0L;
+        final long typeCost = newType ? cell.getBytesPerTypeLong(container) : 0L;
         final long usedBytes = stats.usedBytes() + typeCost;
-        final long freeBytes = cell.getBytes(container) - usedBytes;
+        final long freeBytes = cell.getTotalBytesLong(container) - usedBytes;
         if (freeBytes <= 0) {
             return 0;
         }
-        final long freeItems = freeBytes * channel.getUnitsPerByte() * cell.getByteMultiplier();
+        final long freeItems = multiplySaturated(multiplySaturated(freeBytes, channel.getUnitsPerByte()), cell.getByteMultiplier());
         return Math.min(requested, freeItems);
+    }
+
+    private static long multiplySaturated(final long left, final long right) {
+        if (left <= 0 || right <= 0) {
+            return 0;
+        }
+        if (left > Long.MAX_VALUE / right) {
+            return Long.MAX_VALUE;
+        }
+        return left * right;
     }
 
     private UniversalStorageWorldData.StoredStack findStoredStack(final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> storage,

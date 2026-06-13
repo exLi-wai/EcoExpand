@@ -11,3 +11,5 @@ item.eco_expand.estorage_cell_universal_16m.name=§9ECO - §bLE4 §9通用存储
 item.eco_expand.estorage_cell_universal_64m.name=§9ECO - §6LE6 §9通用存储矩阵
 item.eco_expand.estorage_cell_universal_256m.name=§9ECO - §5LE9 §9通用存储矩阵
 item.eco_expand.estorage_cell_universal_1024m.name=§9ECO - §dLE12 §9通用存储矩阵
+item.eco_expand.estorage_cell_universal_2048m.name=§9ECO - §dLE15 §9通用存储矩阵
+item.eco_expand.estorage_cell_universal_inf.name=§9ECO - §dINF §9通用存储矩阵

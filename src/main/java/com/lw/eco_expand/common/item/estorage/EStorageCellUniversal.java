@@ -30,25 +30,30 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
     private static final int TYPES_L6 = 512;
     private static final int TYPES_L9 = 768;
     private static final int TYPES_LE12 = 1024;
+    private static final int TYPES_LE15 = 2048;
+    private static final int TYPES_INFINITE = Integer.MAX_VALUE;
 
     public static final EStorageCellUniversal LEVEL_L4 = new EStorageCellUniversal("16m", "le4", DriveStorageLevel.A, 16, 4, TYPES_L4);
     public static final EStorageCellUniversal LEVEL_L6 = new EStorageCellUniversal("64m", "le6", DriveStorageLevel.B, 64, 16, TYPES_L6);
     public static final EStorageCellUniversal LEVEL_L9 = new EStorageCellUniversal("256m", "le9", DriveStorageLevel.C, 256, 64, TYPES_L9);
-    public static final EStorageCellUniversal LEVEL_LE12 = new EStorageCellUniversal("1024m", "le12", DriveStorageLevel.C, 1024, 256, TYPES_LE12);
+    public static final EStorageCellUniversal LEVEL_L12 = new EStorageCellUniversal("1024m", "le12", DriveStorageLevel.C, 1024, 256, TYPES_LE12);
+    public static final EStorageCellUniversal LEVEL_L15 = new EStorageCellUniversal("2048m", "le15", DriveStorageLevel.C, 2048, 256, TYPES_LE15);
+    public static final EStorageCellUniversal LEVEL_INFINITE = new EStorageCellUniversal("inf", "inf", DriveStorageLevel.C, 2048, 256, TYPES_INFINITE, Long.MAX_VALUE);
 
     private final String capacityName;
     private final String levelName;
+    private final long totalBytesLong;
     private final int totalTypes;
 
-    public EStorageCellUniversal(final String capacityName,
-                                 final String levelName,
-                                 final DriveStorageLevel level,
-                                 final int millionBytes,
-                                 final int byteMultiplier,
-                                 final int totalTypes) {
+    public EStorageCellUniversal(final String capacityName, final String levelName, final DriveStorageLevel level, final int millionBytes, final int byteMultiplier, final int totalTypes) {
+        this(capacityName, levelName, level, millionBytes, byteMultiplier, totalTypes, millionBytes * 1000L * 1024L);
+    }
+
+    private EStorageCellUniversal(final String capacityName, final String levelName, final DriveStorageLevel level, final int millionBytes, final int byteMultiplier, final int totalTypes, final long totalBytesLong) {
         super(level, millionBytes, byteMultiplier);
         this.capacityName = capacityName;
         this.levelName = levelName;
+        this.totalBytesLong = totalBytesLong;
         this.totalTypes = totalTypes;
         setRegistryName(new ResourceLocation(Tags.MOD_ID, "estorage_cell_universal_" + capacityName));
         setTranslationKey(Tags.MOD_ID + '.' + "estorage_cell_universal_" + capacityName);
@@ -87,6 +92,19 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
         return byteMultiplier * 1024;
     }
 
+    @Override
+    public int getBytes(@Nonnull final ItemStack cellItem) {
+        return totalBytesLong > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) totalBytesLong;
+    }
+
+    public long getTotalBytesLong(final ItemStack cellItem) {
+        return totalBytesLong;
+    }
+
+    public long getBytesPerTypeLong(final ItemStack cellItem) {
+        return byteMultiplier * 1024L;
+    }
+
     @Nonnull
     @Override
     public IStorageChannel<IAEItemStack> getChannel() {
@@ -105,6 +123,7 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
 
         int types = 0;
         long count = 0;
+        long countBytes = 0;
         final UUID uuid = getOrCreateUuid(stack);
         final Object2ObjectMap<String, Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack>> storage = data.getStorage(uuid);
         for (final Object2ObjectMap.Entry<String, Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack>> typedEntry
@@ -118,27 +137,13 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
                 if (stored.count() > 0) {
                     types++;
                     count += stored.count();
-                }
-            }
-        }
-
-        long countBytes = 0;
-        for (final Object2ObjectMap.Entry<String, Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack>> typedEntry
-                : storage.object2ObjectEntrySet()) {
-            if (!UniversalStorageDataManager.isSupportedType(typedEntry.getKey())) {
-                continue;
-            }
-
-            final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> typedStorage = typedEntry.getValue();
-            for (final UniversalStorageWorldData.StoredStack stored : typedStorage.values()) {
-                if (stored.count() > 0) {
                     final long unitsPerByte = stored.stack().getChannel().getUnitsPerByte() * (long) byteMultiplier;
                     countBytes += (stored.count() + unitsPerByte - 1L) / unitsPerByte;
                 }
             }
         }
 
-        final long usedBytes = types * (long) getBytesPerType(stack) + countBytes;
+        final long usedBytes = types * getBytesPerTypeLong(stack) + countBytes;
         return new UniversalStorageStats(types, count, usedBytes);
     }
 
@@ -146,7 +151,7 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
     protected void addCheckedInformation(final ItemStack stack, final World world, final List<String> lines, final ITooltipFlag advancedTooltips) {
         final UniversalStorageStats stats = getStats(stack);
         lines.add("Universal Types: " + stats.types() + " / " + totalTypes);
-        lines.add("Universal Bytes: " + stats.usedBytes() + " / " + getBytes(stack));
+        lines.add("Universal Bytes: " + stats.usedBytes() + " / " + getTotalBytesLong(stack));
         final NBTTagCompound tag = stack.getTagCompound();
         if (tag != null && tag.hasUniqueId(NBT_UUID)) {
             tag.setString(NBT_LEVEL_NAME, levelName);

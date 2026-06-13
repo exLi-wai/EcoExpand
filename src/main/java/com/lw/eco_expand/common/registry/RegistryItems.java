@@ -26,7 +26,9 @@ public final class RegistryItems {
             EStorageCellUniversal.LEVEL_L4,
             EStorageCellUniversal.LEVEL_L6,
             EStorageCellUniversal.LEVEL_L9,
-            EStorageCellUniversal.LEVEL_LE12
+            EStorageCellUniversal.LEVEL_L12,
+            EStorageCellUniversal.LEVEL_L15,
+            EStorageCellUniversal.LEVEL_INFINITE
     };
 
     @SubscribeEvent

@@ -112,7 +112,7 @@ public abstract class MixinBlockEStorageCellDrive {
             if (stats.types() <= 0) {
                 return DriveStorageCapacity.EMPTY;
             }
-            if (stats.usedBytes() >= universal.getBytes(stack)) {
+            if (stats.usedBytes() >= universal.getTotalBytesLong(stack)) {
                 return DriveStorageCapacity.FULL;
             }
             if (stats.types() >= universal.getTotalTypes(stack)) {

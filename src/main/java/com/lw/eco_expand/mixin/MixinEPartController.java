@@ -18,8 +18,7 @@ public abstract class MixinEPartController {
 
     @Redirect(method = "func_145843_s",
             at = @At(value = "INVOKE", target = "Ljava/util/Map;forEach(Ljava/util/function/BiConsumer;)V"))
-    private void ECO_Expand$removeOwnersCompat(final Map<?, ?> foundComponents,
-                                             final BiConsumer<?, ?> originalConsumer) {
+    private void ECO_Expand$removeOwnersCompat(final Map<?, ?> foundComponents, final BiConsumer<?, ?> originalConsumer) {
         foundComponents.forEach((key, value) -> {
             if (key instanceof TileEntity && value instanceof ProcessingComponent) {
                 MachineComponentManager.INSTANCE.removeOwner((TileEntity) key, ECO_Expand$self());
