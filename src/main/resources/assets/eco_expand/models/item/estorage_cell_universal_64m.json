@@ -1,7 +1,7 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "ecoaeextension:items/estorage_cell_disks_b1_item_64m",
-    "layer1": "ecoaeextension:items/bloom/estorage_cell_disks_b1_item_64m"
+    "layer0": "eco_expand:items/estorage_cell_disks_d2_universal_64m",
+    "layer1": "eco_expand:items/bloom/estorage_cell_disks_d2_universal_64m"
   }
 }

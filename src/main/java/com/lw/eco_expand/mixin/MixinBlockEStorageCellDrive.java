@@ -4,6 +4,7 @@ import appeng.api.AEApi;
 import appeng.api.storage.ICellInventoryHandler;
 import appeng.api.storage.IStorageChannel;
 import appeng.api.storage.data.IAEStack;
+import com.lw.eco_expand.ECO_Expand;
 import com.lw.eco_expand.common.item.estorage.EStorageCellEnergy;
 import com.lw.eco_expand.common.item.estorage.EStorageCellEssentia;
 import com.lw.eco_expand.common.item.estorage.EStorageCellMana;
@@ -29,6 +30,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Mixin(value = BlockEStorageCellDrive.class, remap = false)
 public abstract class MixinBlockEStorageCellDrive {
 
@@ -41,7 +45,28 @@ public abstract class MixinBlockEStorageCellDrive {
     @Unique
     private static final String ECO_EXPAND$ESSENTIA_STORAGE_TYPE = "ESSENTIA";
 
-    @Inject(method = "func_176221_a", at = @At("HEAD"), cancellable = true, require = 1)
+    @Unique
+    private static final String ECO_EXPAND$UNIVERSAL_16M_STORAGE_TYPE = "UNIVERSAL_16M";
+
+    @Unique
+    private static final String ECO_EXPAND$UNIVERSAL_64M_STORAGE_TYPE = "UNIVERSAL_64M";
+
+    @Unique
+    private static final String ECO_EXPAND$UNIVERSAL_256M_STORAGE_TYPE = "UNIVERSAL_256M";
+
+    @Unique
+    private static final String ECO_EXPAND$UNIVERSAL_1024M_STORAGE_TYPE = "UNIVERSAL_1024M";
+
+    @Unique
+    private static final String ECO_EXPAND$UNIVERSAL_2048M_STORAGE_TYPE = "UNIVERSAL_2048M";
+
+    @Unique
+    private static final String ECO_EXPAND$UNIVERSAL_INF_STORAGE_TYPE = "UNIVERSAL_INF";
+
+    @Unique
+    private static final Set<String> ECO_EXPAND$LOGGED_RENDER_STATES = new HashSet<>();
+
+    @Inject(method = "func_176221_a", at = @At("RETURN"), cancellable = true, require = 1)
     private void ecoExpand$getActualStateSrg(final IBlockState state, final IBlockAccess world, final BlockPos pos, final CallbackInfoReturnable<IBlockState> cir) {
         final TileEntity te = world.getTileEntity(pos);
         if (!(te instanceof EStorageCellDrive)) {
@@ -61,10 +86,12 @@ public abstract class MixinBlockEStorageCellDrive {
         final EStorageCell<?> cell = (EStorageCell<?>) item;
         final DriveStorageType displayType = ECO_Expand$getDisplayType(item);
         final DriveStorageCapacity capacity = ECO_Expand$getCapacity(stack, drive, item);
-        final IBlockState renderedState = state.withProperty(DriveStorageLevel.STORAGE_LEVEL, cell.getLevel())
+        final IBlockState baseState = cir.getReturnValue() == null ? state : cir.getReturnValue();
+        final IBlockState renderedState = baseState.withProperty(DriveStorageLevel.STORAGE_LEVEL, cell.getLevel())
                 .withProperty(DriveStorageType.STORAGE_TYPE, displayType)
                 .withProperty(DriveStatus.STATUS, drive.isWriting() ? DriveStatus.RUN : DriveStatus.IDLE)
                 .withProperty(DriveStorageCapacity.STORAGE_CAPACITY, capacity);
+        ECO_Expand$logRenderState(item, cell, displayType, capacity, pos);
         cir.setReturnValue(renderedState);
     }
 
@@ -104,6 +131,27 @@ public abstract class MixinBlockEStorageCellDrive {
         if (item instanceof EStorageCellMana) {
             return DriveStorageType.valueOf(ECO_EXPAND$MANA_STORAGE_TYPE);
         }
+        if (item instanceof EStorageCellUniversal) {
+            final EStorageCellUniversal universal = (EStorageCellUniversal) item;
+            if ("16m".equals(universal.getCapacityName())) {
+                return DriveStorageType.valueOf(ECO_EXPAND$UNIVERSAL_16M_STORAGE_TYPE);
+            }
+            if ("64m".equals(universal.getCapacityName())) {
+                return DriveStorageType.valueOf(ECO_EXPAND$UNIVERSAL_64M_STORAGE_TYPE);
+            }
+            if ("256m".equals(universal.getCapacityName())) {
+                return DriveStorageType.valueOf(ECO_EXPAND$UNIVERSAL_256M_STORAGE_TYPE);
+            }
+            if ("1024m".equals(universal.getCapacityName())) {
+                return DriveStorageType.valueOf(ECO_EXPAND$UNIVERSAL_1024M_STORAGE_TYPE);
+            }
+            if ("2048m".equals(universal.getCapacityName())) {
+                return DriveStorageType.valueOf(ECO_EXPAND$UNIVERSAL_2048M_STORAGE_TYPE);
+            }
+            if ("inf".equals(universal.getCapacityName())) {
+                return DriveStorageType.valueOf(ECO_EXPAND$UNIVERSAL_INF_STORAGE_TYPE);
+            }
+        }
         return DriveStorageType.ITEM;
     }
 
@@ -131,5 +179,18 @@ public abstract class MixinBlockEStorageCellDrive {
             return DriveStorageCapacity.EMPTY;
         }
         return EStorageCellDrive.getCapacity(cellInventory);
+    }
+
+    @Unique
+    private static void ECO_Expand$logRenderState(final Item item,
+                                                 final EStorageCell<?> cell,
+                                                 final DriveStorageType displayType,
+                                                 final DriveStorageCapacity capacity,
+                                                 final BlockPos pos) {
+        final String key = item.getRegistryName() + ":" + cell.getLevel() + ":" + displayType + ":" + capacity;
+        if (ECO_EXPAND$LOGGED_RENDER_STATES.add(key)) {
+            ECO_Expand.LOGGER.info("EStorage drive render mapped custom cell {} to level={}, type={}, capacity={}, pos={}",
+                    item.getRegistryName(), cell.getLevel(), displayType, capacity, pos);
+        }
     }
 }

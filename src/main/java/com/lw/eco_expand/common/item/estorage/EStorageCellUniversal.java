@@ -12,6 +12,7 @@ import com.lw.eco_expand.common.estorage.universal.UniversalStorageWorldData;
 import github.kasuminova.ecoaeextension.common.block.ecotech.estorage.prop.DriveStorageLevel;
 import github.kasuminova.ecoaeextension.common.item.estorage.EStorageCell;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -150,8 +151,8 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
     @Override
     protected void addCheckedInformation(final ItemStack stack, final World world, final List<String> lines, final ITooltipFlag advancedTooltips) {
         final UniversalStorageStats stats = getStats(stack);
-        lines.add("Universal Types: " + stats.types() + " / " + totalTypes);
-        lines.add("Universal Bytes: " + stats.usedBytes() + " / " + getTotalBytesLong(stack));
+        lines.add(I18n.format("tooltip.eco_expand.universal.types", stats.types(), totalTypes));
+        lines.add(I18n.format("tooltip.eco_expand.universal.bytes", stats.usedBytes(), getTotalBytesLong(stack)));
         final NBTTagCompound tag = stack.getTagCompound();
         if (tag != null && tag.hasUniqueId(NBT_UUID)) {
             tag.setString(NBT_LEVEL_NAME, levelName);
