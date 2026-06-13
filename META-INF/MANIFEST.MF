@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+FMLCorePlugin: com.lw.eco_expand.mixin.EcoExpandCorePlugin
+FMLCorePluginContainsFMLMod: true
+ForceLoadAsMod: true
+MixinConfigs: mixins.eco_expand_early.json
+
