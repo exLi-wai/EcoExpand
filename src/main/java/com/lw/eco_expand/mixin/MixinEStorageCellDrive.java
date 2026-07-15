@@ -89,6 +89,9 @@ public abstract class MixinEStorageCellDrive {
             return;
         }
 
+        if (isCached && (cellHandler == null || inventoryHandlers.isEmpty())) {
+            isCached = false;
+        }
         updateHandler(false);
 
         @SuppressWarnings("unchecked")
@@ -116,7 +119,8 @@ public abstract class MixinEStorageCellDrive {
             watcher = null;
             cellHandler = null;
             ECO_Expand$getInventoryHandlers().clear();
-            isCached = true;
+
+            isCached = false;
             if (refreshState) {
                 updateDriveBlockState();
             }
@@ -137,6 +141,7 @@ public abstract class MixinEStorageCellDrive {
 
         cellHandler = EStorageCellHandler.getHandler(stack);
         if (cellHandler == null) {
+            isCached = false;
             ci.cancel();
             return;
         }
@@ -162,6 +167,7 @@ public abstract class MixinEStorageCellDrive {
         ECO_Expand.LOGGER.info("Universal EStorage cell {} attached {} channel handlers: {}",
                 stack.getItem().getRegistryName(), attachedChannels.size(), attachedChannels);
 
+        isCached = found;
         if (found && refreshState) {
             updateDriveBlockState();
         }
