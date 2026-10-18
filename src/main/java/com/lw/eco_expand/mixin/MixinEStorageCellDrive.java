@@ -10,6 +10,7 @@ import appeng.api.storage.ICellInventoryHandler;
 import appeng.api.storage.IStorageChannel;
 import appeng.api.storage.data.IAEStack;
 import appeng.api.storage.data.IItemList;
+import appeng.api.storage.data.IItemList;
 import appeng.tile.inventory.AppEngCellInventory;
 import appeng.util.inv.InvOperation;
 import com.lw.eco_expand.ECO_Expand;
@@ -34,6 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.NoSuchElementException;
 
 @Mixin(value = EStorageCellDrive.class, remap = false)
 public abstract class MixinEStorageCellDrive {
@@ -67,6 +69,111 @@ public abstract class MixinEStorageCellDrive {
     @Shadow
     protected abstract void updateHandler(boolean refreshState);
 
+    @Inject(method = "getMaxTypes", at = @At("HEAD"), cancellable = true)
+    private static void ECO_Expand$getUniversalMaxTypes(final github.kasuminova.ecoaeextension.common.container.data.EStorageCellData data,
+                                                         final CallbackInfoReturnable<Integer> cir) {
+        final EStorageCellUniversal cell = ECO_Expand$getUniversalCell(data);
+        if (cell != null) {
+            cir.setReturnValue(cell.getTotalTypes(ItemStack.EMPTY));
+        }
+    }
+
+    @Inject(method = "getMaxBytes", at = @At("HEAD"), cancellable = true)
+    private static void ECO_Expand$getUniversalMaxBytes(final github.kasuminova.ecoaeextension.common.container.data.EStorageCellData data,
+                                                         final CallbackInfoReturnable<Long> cir) {
+        final EStorageCellUniversal cell = ECO_Expand$getUniversalCell(data);
+        if (cell != null) {
+            cir.setReturnValue(cell.getTotalBytesLong(ItemStack.EMPTY));
+        }
+    }
+
+    @Unique
+    private static EStorageCellUniversal ECO_Expand$getUniversalCell(final github.kasuminova.ecoaeextension.common.container.data.EStorageCellData data) {
+        if (data == null || data.type() == null) {
+            return null;
+        }
+
+        final String type = data.type().name();
+        if ("UNIVERSAL_16M".equals(type)) {
+            return EStorageCellUniversal.LEVEL_L4;
+        }
+        if ("UNIVERSAL_64M".equals(type)) {
+            return EStorageCellUniversal.LEVEL_L6;
+        }
+        if ("UNIVERSAL_256M".equals(type)) {
+            return EStorageCellUniversal.LEVEL_L9;
+        }
+        if ("UNIVERSAL_1024M".equals(type)) {
+            return EStorageCellUniversal.LEVEL_L12;
+        }
+        if ("UNIVERSAL_4096M".equals(type)) {
+            return EStorageCellUniversal.LEVEL_L15;
+        }
+        if ("UNIVERSAL_INF".equals(type)) {
+            return EStorageCellUniversal.LEVEL_INFINITE;
+        }
+        return null;
+    }
+
+    @Inject(method = "postChanges", at = @At("HEAD"), cancellable = true)
+    private void ECO_Expand$postUniversalChanges(final IStorageGrid storageGrid,
+                                                   final ItemStack oldStack,
+                                                   final ItemStack newStack,
+                                                   final IActionSource source,
+                                                   final CallbackInfo ci) {
+        if (!(oldStack.getItem() instanceof EStorageCellUniversal)
+                && !(newStack.getItem() instanceof EStorageCellUniversal)) {
+            return;
+        }
+        if (storageGrid == null) {
+            ci.cancel();
+            return;
+        }
+
+        final EStorageCellDrive drive = (EStorageCellDrive) (Object) this;
+        final EStorageCellHandler oldHandler = EStorageCellHandler.getHandler(oldStack);
+        final EStorageCellHandler newHandler = EStorageCellHandler.getHandler(newStack);
+        for (final IStorageChannel<? extends IAEStack<?>> channel : AEApi.instance().storage().storageChannels()) {
+            final IItemList changes = ((IStorageChannel) channel).createList();
+            ECO_Expand$appendCellChanges(changes, oldHandler, oldStack, drive, channel, true);
+            ECO_Expand$appendCellChanges(changes, newHandler, newStack, drive, channel, false);
+            if (changes.isEmpty()) {
+                continue;
+            }
+            try {
+                storageGrid.postAlterationOfStoredItems(channel, changes, source);
+            } catch (final NoSuchElementException exception) {
+                ECO_Expand.LOGGER.debug("Skipped an empty AE storage change while replacing a universal cell.", exception);
+            }
+        }
+        ci.cancel();
+    }
+
+    @Unique
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void ECO_Expand$appendCellChanges(final IItemList changes,
+                                               final EStorageCellHandler handler,
+                                               final ItemStack stack,
+                                               final EStorageCellDrive drive,
+                                               final IStorageChannel<? extends IAEStack<?>> channel,
+                                               final boolean remove) {
+        if (handler == null || stack.isEmpty()) {
+            return;
+        }
+        final ICellInventoryHandler inventory = handler.getCellInventory(stack, drive, (IStorageChannel) channel);
+        if (inventory == null) {
+            return;
+        }
+        inventory.getAvailableItems(changes);
+        if (!remove) {
+            return;
+        }
+        for (final Object object : changes) {
+            final IAEStack stackChange = (IAEStack) object;
+            stackChange.setStackSize(-stackChange.getStackSize());
+        }
+    }
+
     @Inject(method = "onChangeInventory", at = @At("RETURN"))
     private void ECO_Expand$postUniversalCellRemoval(final IItemHandler inv, final int slot, final InvOperation operation, final ItemStack removedStack, final ItemStack newStack, final CallbackInfo ci) {
         if (slot != 0 || removedStack.isEmpty() || !(removedStack.getItem() instanceof EStorageCellUniversal) || !newStack.isEmpty()) {
@@ -78,8 +185,7 @@ public abstract class MixinEStorageCellDrive {
     }
 
     @Inject(method = "getHandler", at = @At("HEAD"), cancellable = true)
-    private <T extends IAEStack<T>> void ECO_Expand$getUniversalHandler(final IStorageChannel<T> channel,
-                                                                       final CallbackInfoReturnable<IMEInventoryHandler<T>> cir) {
+    private <T extends IAEStack<T>> void ECO_Expand$getUniversalHandler(final IStorageChannel<T> channel, final CallbackInfoReturnable<IMEInventoryHandler<T>> cir) {
         final ItemStack stack = driveInv.getStackInSlot(0);
         if (!(stack.getItem() instanceof EStorageCellUniversal)) {
             return;
@@ -231,11 +337,7 @@ public abstract class MixinEStorageCellDrive {
 
     @Unique
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private void ECO_Expand$postRemovalChanges(final IStorageGrid storageGrid,
-                                               final IActionSource source,
-                                               final EStorageCellHandler handler,
-                                               final ItemStack removedStack,
-                                               final IStorageChannel<? extends IAEStack<?>> channel) {
+    private void ECO_Expand$postRemovalChanges(final IStorageGrid storageGrid, final IActionSource source, final EStorageCellHandler handler, final ItemStack removedStack, final IStorageChannel<? extends IAEStack<?>> channel) {
         final ICellInventoryHandler cellInventory = handler.getCellInventory(removedStack, (EStorageCellDrive) (Object) this, (IStorageChannel) channel);
         if (cellInventory == null) {
             return;

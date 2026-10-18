@@ -34,9 +34,5 @@ public final class RegistryItems {
     @SubscribeEvent
     public static void registerItems(final RegistryEvent.Register<Item> event) {
         event.getRegistry().registerAll(STORAGE_CELLS);
-        for (final Item item : STORAGE_CELLS) {
-            ECO_Expand.LOGGER.info("Registered EStorage cell item: registry={}, translationKey={}",
-                    item.getRegistryName(), item.getTranslationKey());
-        }
     }
 }

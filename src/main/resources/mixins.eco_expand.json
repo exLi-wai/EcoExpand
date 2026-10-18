@@ -11,8 +11,12 @@
 		"MixinEPartController",
 		"MixinECellDriveWatcher",
 		"MixinEStorageCellDrive",
+		"MixinEStorageCellData",
+		"MixinEcoAEStorageInfoProvider",
 		"MixinEStorageCellHandler"
 	],
 	"server": [],
-	"client": []
+	"client": [
+		"MixinEStorageCellInfo"
+	]
 }

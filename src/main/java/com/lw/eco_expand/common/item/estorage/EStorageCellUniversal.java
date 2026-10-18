@@ -33,6 +33,7 @@ import java.util.UUID;
 public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
 
     private static final String NBT_UUID = "eco_expand_universal_uuid";
+    private static final String NBT_DIMENSION = "eco_expand_universal_dimension";
     private static final String NBT_LEVEL_NAME = "eco_expand_universal_level";
     private static final Object2ObjectMap<UUID, String> UUID_OWNERS = new Object2ObjectOpenHashMap<>();
     private static final int TYPES_L4 = 315;
@@ -86,6 +87,7 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
     public static UUID getOrCreateUuid(final ItemStack stack, final ISaveProvider saveProvider) {
         final UUID uuid = getOrCreateUuid(stack);
         final String owner = getOwnerKey(saveProvider);
+        rememberDimension(stack, saveProvider);
         if (owner == null) {
             return uuid;
         }
@@ -225,7 +227,10 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
     }
 
     public UniversalStorageStats getStats(final ItemStack stack, final World world) {
-        final UniversalStorageWorldData data = world == null ? UniversalStorageWorldData.get() : UniversalStorageWorldData.get(world);
+        final World storageWorld = world == null ? getRememberedWorld(stack) : world;
+        final UniversalStorageWorldData data = storageWorld == null
+                ? UniversalStorageWorldData.get()
+                : UniversalStorageWorldData.get(storageWorld);
         if (data == null) {
             return new UniversalStorageStats(0, 0, 0);
         }
@@ -288,6 +293,9 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
 
     @Override
     protected void addCheckedInformation(final ItemStack stack, final World world, final List<String> lines, final ITooltipFlag advancedTooltips) {
+        // A cell in a player's inventory has no TileEntity context. Resolve the
+        // dimension remembered when it was last attached to a drive instead of
+        // assuming the player's current world (or dimension 0).
         final UniversalStorageStats stats = getStats(stack);
         lines.add(I18n.format("tooltip.eco_expand.universal.types", stats.types(), totalTypes));
         lines.add(I18n.format("tooltip.eco_expand.universal.bytes", stats.usedBytes(), getTotalBytesLong(stack)));
@@ -295,5 +303,32 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
         if (tag != null && tag.hasUniqueId(NBT_UUID)) {
             tag.setString(NBT_LEVEL_NAME, levelName);
         }
+    }
+
+    private static void rememberDimension(final ItemStack stack, final ISaveProvider saveProvider) {
+        if (!(saveProvider instanceof TileEntity)) {
+            return;
+        }
+
+        final World world = ((TileEntity) saveProvider).getWorld();
+        if (world == null || world.provider == null) {
+            return;
+        }
+
+        NBTTagCompound tag = stack.getTagCompound();
+        if (tag == null) {
+            tag = new NBTTagCompound();
+            stack.setTagCompound(tag);
+        }
+        tag.setInteger(NBT_DIMENSION, world.provider.getDimension());
+    }
+
+    @Nullable
+    private static World getRememberedWorld(final ItemStack stack) {
+        final NBTTagCompound tag = stack.getTagCompound();
+        if (tag == null || !tag.hasKey(NBT_DIMENSION, 3)) {
+            return null;
+        }
+        return net.minecraftforge.common.DimensionManager.getWorld(tag.getInteger(NBT_DIMENSION));
     }
 }

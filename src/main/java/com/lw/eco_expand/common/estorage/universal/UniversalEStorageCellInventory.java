@@ -141,14 +141,19 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
             return out;
         }
 
-        for (final UniversalStorageWorldData.StoredStack stored : data.getStorage(uuid, type).values()) {
-            if (stored.count() <= 0) {
-                continue;
+        synchronized (data) {
+            // AE2 rebuilds its ItemList from this method. Keep the complete
+            // traversal under the same lock used by inject/extract/stats so a
+            // high-rate transfer cannot mutate the FastUtil map mid-iteration.
+            for (final UniversalStorageWorldData.StoredStack stored : data.getStorage(uuid, type).values()) {
+                if (stored.count() <= 0) {
+                    continue;
+                }
+                @SuppressWarnings("unchecked")
+                final T stack = (T) stored.stack().copy();
+                stack.setStackSize(stored.count());
+                out.add(stack);
             }
-            @SuppressWarnings("unchecked")
-            final T stack = (T) stored.stack().copy();
-            stack.setStackSize(stored.count());
-            out.add(stack);
         }
         return out;
     }
