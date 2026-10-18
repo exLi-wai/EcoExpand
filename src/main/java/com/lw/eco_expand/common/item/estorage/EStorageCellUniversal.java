@@ -230,30 +230,60 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
             return new UniversalStorageStats(0, 0, 0);
         }
 
-        int types = 0;
-        long count = 0;
-        long countBytes = 0;
-        final UUID uuid = getOrCreateUuid(stack);
-        final Object2ObjectMap<String, Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack>> storage = data.getStorage(uuid);
-        for (final Object2ObjectMap.Entry<String, Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack>> typedEntry
-                : storage.object2ObjectEntrySet()) {
-            if (!UniversalStorageDataManager.isSupportedType(typedEntry.getKey())) {
-                continue;
-            }
+        synchronized (data) {
+            int types = 0;
+            long count = 0;
+            long countBytes = 0;
+            final UUID uuid = getOrCreateUuid(stack);
+            final Object2ObjectMap<String, Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack>> storage = data.getStorage(uuid);
+            for (final Object2ObjectMap.Entry<String, Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack>> typedEntry
+                    : storage.object2ObjectEntrySet()) {
+                if (!UniversalStorageDataManager.isSupportedType(typedEntry.getKey())) {
+                    continue;
+                }
 
-            final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> typedStorage = typedEntry.getValue();
-            for (final UniversalStorageWorldData.StoredStack stored : typedStorage.values()) {
-                if (stored.count() > 0) {
-                    types++;
-                    count += stored.count();
-                    final long unitsPerByte = stored.stack().getChannel().getUnitsPerByte() * (long) byteMultiplier;
-                    countBytes += (stored.count() + unitsPerByte - 1L) / unitsPerByte;
+                final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> typedStorage = typedEntry.getValue();
+                for (final UniversalStorageWorldData.StoredStack stored : typedStorage.values()) {
+                    if (stored.count() > 0) {
+                        types++;
+                        count = saturatedAdd(count, stored.count());
+                        final long unitsPerByte = stored.stack().getChannel().getUnitsPerByte() * (long) byteMultiplier;
+                        final long itemBytes = ceilDividePositive(stored.count(), unitsPerByte);
+                        countBytes = saturatedAdd(countBytes, itemBytes);
+                    }
                 }
             }
-        }
 
-        final long usedBytes = types * getBytesPerTypeLong(stack) + countBytes;
-        return new UniversalStorageStats(types, count, usedBytes);
+            final long typeBytes = multiplySaturated(types, getBytesPerTypeLong(stack));
+            final long usedBytes = saturatedAdd(typeBytes, countBytes);
+            return new UniversalStorageStats(types, count, usedBytes);
+        }
+    }
+
+    private static long multiplySaturated(final long left, final long right) {
+        if (left <= 0L || right <= 0L) {
+            return 0L;
+        }
+        if (left > Long.MAX_VALUE / right) {
+            return Long.MAX_VALUE;
+        }
+        return left * right;
+    }
+
+    private static long saturatedAdd(final long left, final long right) {
+        if (right > 0L && left > Long.MAX_VALUE - right) {
+            return Long.MAX_VALUE;
+        }
+        return left + right;
+    }
+
+    private static long ceilDividePositive(final long value, final long divisor) {
+        if (value <= 0L || divisor <= 0L) {
+            return 0L;
+        }
+        return value > Long.MAX_VALUE - divisor + 1L
+                ? (value / divisor) + (value % divisor == 0L ? 0L : 1L)
+                : (value + divisor - 1L) / divisor;
     }
 
     @Override

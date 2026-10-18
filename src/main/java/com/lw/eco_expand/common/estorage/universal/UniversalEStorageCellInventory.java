@@ -51,47 +51,49 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
             return input;
         }
 
-        final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> typedStorage = data.getStorage(uuid, type);
-        final IAEStack<?> key = input.copy();
-        key.setStackSize(1);
-        final UniversalStorageWorldData.StoredStack existing = findStoredStack(typedStorage, key);
-        final boolean newType = existing == null;
+        synchronized (data) {
+            final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> typedStorage = data.getStorage(uuid, type);
+            final IAEStack<?> key = input.copy();
+            key.setStackSize(1);
+            final UniversalStorageWorldData.StoredStack existing = findStoredStack(typedStorage, key);
+            final boolean newType = existing == null;
 
-        final UniversalStorageStats stats = cell.getStats(container);
-        if (newType && stats.types() >= cell.getTotalTypes(container)) {
-            logRejectOnce("type_full:" + type + ":" + cell.getRegistryName(),
-                    "Universal cell reject insert: type limit reached type={}, types={}/{}, stack={}",
-                    type, stats.types(), cell.getTotalTypes(container), input);
-            return input;
-        }
-
-        final long available = getAvailableToInsert(input.getStackSize(), newType, stats);
-        if (available <= 0) {
-            logRejectOnce("byte_full:" + type + ":" + cell.getRegistryName(),
-                    "Universal cell reject insert: no bytes type={}, usedBytes={}, totalBytes={}, stack={}",
-                    type, stats.usedBytes(), cell.getTotalBytesLong(container), input);
-            return input;
-        }
-
-        if (actionable == Actionable.MODULATE) {
-            if (existing == null) {
-                typedStorage.put(key, new UniversalStorageWorldData.StoredStack(key, available));
-            } else {
-                existing.setCount(existing.count() + available);
+            final UniversalStorageStats stats = cell.getStats(container, getStorageWorld());
+            if (newType && stats.types() >= cell.getTotalTypes(container)) {
+                logRejectOnce("type_full:" + type + ":" + cell.getRegistryName(),
+                        "Universal cell reject insert: type limit reached type={}, types={}/{}, stack={}",
+                        type, stats.types(), cell.getTotalTypes(container), input);
+                return input;
             }
-            data.markDirty();
-            notifySaveProvider();
-            ECO_Expand.LOGGER.debug("Universal cell inserted: type={}, stackClass={}, inserted={}, requested={}, uuid={}",
-                    type, input.getClass().getName(), available, input.getStackSize(), uuid);
-        }
 
-        if (available >= input.getStackSize()) {
-            return null;
-        }
+            final long available = getAvailableToInsert(input.getStackSize(), newType, stats);
+            if (available <= 0) {
+                logRejectOnce("byte_full:" + type + ":" + cell.getRegistryName(),
+                        "Universal cell reject insert: no bytes type={}, usedBytes={}, totalBytes={}, stack={}",
+                        type, stats.usedBytes(), cell.getTotalBytesLong(container), input);
+                return input;
+            }
 
-        final T remainder = input.copy();
-        remainder.setStackSize(input.getStackSize() - available);
-        return remainder;
+            if (actionable == Actionable.MODULATE) {
+                if (existing == null) {
+                    typedStorage.put(key, new UniversalStorageWorldData.StoredStack(key, available));
+                } else {
+                    existing.setCount(saturatedAdd(existing.count(), available));
+                }
+                data.markDirty();
+                notifySaveProvider();
+                ECO_Expand.LOGGER.debug("Universal cell inserted: type={}, stackClass={}, inserted={}, requested={}, uuid={}",
+                        type, input.getClass().getName(), available, input.getStackSize(), uuid);
+            }
+
+            if (available >= input.getStackSize()) {
+                return null;
+            }
+
+            final T remainder = input.copy();
+            remainder.setStackSize(input.getStackSize() - available);
+            return remainder;
+        }
     }
 
     @Override
@@ -105,29 +107,31 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
             return null;
         }
 
-        final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> typedStorage = data.getStorage(uuid, type);
-        final IAEStack<?> key = request.copy();
-        key.setStackSize(1);
-        final UniversalStorageWorldData.StoredStack existing = findStoredStack(typedStorage, key);
-        if (existing == null || existing.count() <= 0) {
-            return null;
-        }
-
-        final long extracted = Math.min(existing.count(), request.getStackSize());
-        if (actionable == Actionable.MODULATE) {
-            final long remaining = existing.count() - extracted;
-            if (remaining <= 0) {
-                typedStorage.remove(key);
-            } else {
-                existing.setCount(remaining);
+        synchronized (data) {
+            final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> typedStorage = data.getStorage(uuid, type);
+            final IAEStack<?> key = request.copy();
+            key.setStackSize(1);
+            final UniversalStorageWorldData.StoredStack existing = findStoredStack(typedStorage, key);
+            if (existing == null || existing.count() <= 0) {
+                return null;
             }
-            data.markDirty();
-            notifySaveProvider();
-        }
 
-        final T result = request.copy();
-        result.setStackSize(extracted);
-        return result;
+            final long extracted = Math.min(existing.count(), request.getStackSize());
+            if (actionable == Actionable.MODULATE) {
+                final long remaining = existing.count() - extracted;
+                if (remaining <= 0) {
+                    typedStorage.remove(key);
+                } else {
+                    existing.setCount(remaining);
+                }
+                data.markDirty();
+                notifySaveProvider();
+            }
+
+            final T result = request.copy();
+            result.setStackSize(extracted);
+            return result;
+        }
     }
 
     @Override
@@ -186,8 +190,12 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
 
     private long getAvailableToInsert(final long requested, final boolean newType, final UniversalStorageStats stats) {
         final long typeCost = newType ? cell.getBytesPerTypeLong(container) : 0L;
-        final long usedBytes = stats.usedBytes() + typeCost;
-        final long freeBytes = cell.getTotalBytesLong(container) - usedBytes;
+        final long usedBytes = saturatedAdd(stats.usedBytes(), typeCost);
+        final long totalBytes = cell.getTotalBytesLong(container);
+        if (usedBytes >= totalBytes) {
+            return 0L;
+        }
+        final long freeBytes = totalBytes - usedBytes;
         if (freeBytes <= 0) {
             return 0;
         }
@@ -203,6 +211,16 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
             return Long.MAX_VALUE;
         }
         return left * right;
+    }
+
+    private static long saturatedAdd(final long left, final long right) {
+        if (right > 0L && left > Long.MAX_VALUE - right) {
+            return Long.MAX_VALUE;
+        }
+        if (right < 0L && left < Long.MIN_VALUE - right) {
+            return Long.MIN_VALUE;
+        }
+        return left + right;
     }
 
     private UniversalStorageWorldData.StoredStack findStoredStack(final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> storage,
@@ -226,12 +244,17 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
         }
     }
 
-    private UniversalStorageWorldData getStorageData() {
+    private World getStorageWorld() {
         if (saveProvider instanceof TileEntity) {
-            final World world = ((TileEntity) saveProvider).getWorld();
-            if (world != null) {
-                return UniversalStorageWorldData.get(world);
-            }
+            return ((TileEntity) saveProvider).getWorld();
+        }
+        return null;
+    }
+
+    private UniversalStorageWorldData getStorageData() {
+        final World world = getStorageWorld();
+        if (world != null) {
+            return UniversalStorageWorldData.get(world);
         }
         return UniversalStorageWorldData.get();
     }
