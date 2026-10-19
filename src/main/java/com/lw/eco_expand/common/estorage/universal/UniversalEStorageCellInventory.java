@@ -4,6 +4,7 @@ import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.storage.IMEInventoryHandler;
+import appeng.api.implementations.items.IStorageCell;
 import appeng.api.storage.ISaveProvider;
 import appeng.api.storage.IStorageChannel;
 import appeng.api.storage.data.IAEStack;
@@ -44,6 +45,9 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
         if (input == null || input.getStackSize() <= 0) {
             return null;
         }
+        if (!canAccept(input)) {
+            return input;
+        }
 
         final UniversalStorageWorldData data = getStorageData();
         if (data == null) {
@@ -53,6 +57,7 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
 
         synchronized (data) {
             final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> typedStorage = data.getStorage(uuid, type);
+            repairStorageKeys(typedStorage);
             final IAEStack<?> key = input.copy();
             key.setStackSize(1);
             final UniversalStorageWorldData.StoredStack existing = findStoredStack(typedStorage, key);
@@ -109,6 +114,7 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
 
         synchronized (data) {
             final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> typedStorage = data.getStorage(uuid, type);
+            repairStorageKeys(typedStorage);
             final IAEStack<?> key = request.copy();
             key.setStackSize(1);
             final UniversalStorageWorldData.StoredStack existing = findStoredStack(typedStorage, key);
@@ -120,7 +126,7 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
             if (actionable == Actionable.MODULATE) {
                 final long remaining = existing.count() - extracted;
                 if (remaining <= 0) {
-                    typedStorage.remove(key);
+                    typedStorage.remove(existing.stack());
                 } else {
                     existing.setCount(remaining);
                 }
@@ -142,11 +148,10 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
         }
 
         synchronized (data) {
-            // AE2 rebuilds its ItemList from this method. Keep the complete
-            // traversal under the same lock used by inject/extract/stats so a
-            // high-rate transfer cannot mutate the FastUtil map mid-iteration.
-            for (final UniversalStorageWorldData.StoredStack stored : data.getStorage(uuid, type).values()) {
-                if (stored.count() <= 0) {
+            final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> typedStorage = data.getStorage(uuid, type);
+            repairStorageKeys(typedStorage);
+            for (final UniversalStorageWorldData.StoredStack stored : typedStorage.values()) {
+                if (stored.count() <= 0 || !canAccept((T) stored.stack())) {
                     continue;
                 }
                 @SuppressWarnings("unchecked")
@@ -175,7 +180,9 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
 
     @Override
     public boolean canAccept(final T stack) {
-        return stack != null && UniversalStorageDataManager.matchesType(stack, type);
+        return stack != null
+                && UniversalStorageDataManager.matchesType(stack, type)
+                && !isSelfOrNonStorableCell(stack);
     }
 
     @Override
@@ -249,11 +256,82 @@ public class UniversalEStorageCellInventory<T extends IAEStack<T>> implements IM
         }
     }
 
+    private boolean isSelfOrNonStorableCell(final T stack) {
+        if (!(stack instanceof appeng.api.storage.data.IAEItemStack)) {
+            return false;
+        }
+
+        final ItemStack definition = ((appeng.api.storage.data.IAEItemStack) stack).getDefinition();
+        if (definition == null || definition.isEmpty() || !(definition.getItem() instanceof IStorageCell)) {
+            return false;
+        }
+
+        final IStorageCell<?> storageCell = (IStorageCell<?>) definition.getItem();
+        if (!storageCell.storableInStorageCell()) {
+            return true;
+        }
+
+        if (definition.getItem() instanceof EStorageCellUniversal) {
+            final UUID incomingUuid = EStorageCellUniversal.getUuid(definition);
+            return incomingUuid != null && uuid.equals(incomingUuid);
+        }
+        return false;
+    }
+
+    /**
+     * Rebuild the FastUtil map so every key is a fresh copy of its stored
+     * stack. Older versions could mutate a stored item NBT while enumerating
+     * the inventory, leaving the key in the wrong hash bucket.
+     */
+    private void repairStorageKeys(final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> storage) {
+        if (storage.isEmpty() || !needsStorageKeyRepair(storage)) {
+            return;
+        }
+
+        final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> repaired =
+                new it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap<>(storage.size());
+        for (final Object2ObjectMap.Entry<IAEStack<?>, UniversalStorageWorldData.StoredStack> entry
+                : storage.object2ObjectEntrySet()) {
+            final UniversalStorageWorldData.StoredStack stored = entry.getValue();
+            if (stored == null || stored.stack() == null || stored.count() <= 0) {
+                continue;
+            }
+
+            final IAEStack<?> key = stored.stack().copy();
+            key.setStackSize(1);
+            final UniversalStorageWorldData.StoredStack previous = repaired.get(key);
+            if (previous == null) {
+                repaired.put(key, new UniversalStorageWorldData.StoredStack(key, stored.count()));
+            } else {
+                previous.setCount(saturatedAdd(previous.count(), stored.count()));
+            }
+        }
+
+        storage.clear();
+        storage.putAll(repaired);
+    }
+
+    private boolean needsStorageKeyRepair(final Object2ObjectMap<IAEStack<?>, UniversalStorageWorldData.StoredStack> storage) {
+        for (final Object2ObjectMap.Entry<IAEStack<?>, UniversalStorageWorldData.StoredStack> entry
+                : storage.object2ObjectEntrySet()) {
+            final IAEStack<?> key = entry.getKey();
+            final UniversalStorageWorldData.StoredStack stored = entry.getValue();
+            if (key == null || stored == null || stored.stack() == null || stored.count() <= 0
+                    || key != stored.stack() || key.getStackSize() != 1 || storage.get(key) != stored) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private World getStorageWorld() {
         if (saveProvider instanceof TileEntity) {
-            return ((TileEntity) saveProvider).getWorld();
+            final World world = ((TileEntity) saveProvider).getWorld();
+            if (world != null) {
+                return world;
+            }
         }
-        return null;
+        return EStorageCellUniversal.getRememberedWorld(container);
     }
 
     private UniversalStorageWorldData getStorageData() {

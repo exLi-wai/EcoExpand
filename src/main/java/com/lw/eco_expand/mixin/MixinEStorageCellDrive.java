@@ -8,8 +8,8 @@ import appeng.api.networking.storage.IStorageGrid;
 import appeng.api.storage.IMEInventoryHandler;
 import appeng.api.storage.ICellInventoryHandler;
 import appeng.api.storage.IStorageChannel;
+import appeng.api.storage.channels.IItemStorageChannel;
 import appeng.api.storage.data.IAEStack;
-import appeng.api.storage.data.IItemList;
 import appeng.api.storage.data.IItemList;
 import appeng.tile.inventory.AppEngCellInventory;
 import appeng.util.inv.InvOperation;
@@ -175,12 +175,11 @@ public abstract class MixinEStorageCellDrive {
     }
 
     @Inject(method = "onChangeInventory", at = @At("RETURN"))
-    private void ECO_Expand$postUniversalCellRemoval(final IItemHandler inv, final int slot, final InvOperation operation, final ItemStack removedStack, final ItemStack newStack, final CallbackInfo ci) {
+    private void ECO_Expand$releaseUniversalUuidOnRemoval(final IItemHandler inv, final int slot, final InvOperation operation, final ItemStack removedStack, final ItemStack newStack, final CallbackInfo ci) {
         if (slot != 0 || removedStack.isEmpty() || !(removedStack.getItem() instanceof EStorageCellUniversal) || !newStack.isEmpty()) {
             return;
         }
 
-        ECO_Expand$postRemovalChanges(removedStack);
         EStorageCellUniversal.releaseUuid(removedStack, (EStorageCellDrive) (Object) this);
     }
 
@@ -195,13 +194,18 @@ public abstract class MixinEStorageCellDrive {
             return;
         }
 
-        if (isCached && (cellHandler == null || inventoryHandlers.isEmpty())) {
+        if (isCached && (cellHandler == null || inventoryHandlers.isEmpty() || !ECO_Expand$hasChannelHandler(channel))) {
             isCached = false;
         }
         updateHandler(false);
 
         @SuppressWarnings("unchecked")
-        final IMEInventoryHandler<T> handler = (IMEInventoryHandler<T>) inventoryHandlers.get(channel);
+        IMEInventoryHandler<T> handler = (IMEInventoryHandler<T>) ECO_Expand$findChannelHandler(channel);
+        if (handler == null && !inventoryHandlers.isEmpty()) {
+            isCached = false;
+            updateHandler(false);
+            handler = (IMEInventoryHandler<T>) ECO_Expand$findChannelHandler(channel);
+        }
         final String key = "getHandler:" + stack.getItem().getRegistryName() + ":" + channel.getClass().getName() + ":" + (handler != null);
         if (LOGGED_HANDLER_RESULTS.add(key)) {
             ECO_Expand.LOGGER.info("Universal EStorage getHandler channel={} result={} handlers={}",
@@ -253,6 +257,7 @@ public abstract class MixinEStorageCellDrive {
         }
 
         boolean found = false;
+        boolean defaultHandlerSet = false;
         final List<String> attachedChannels = new ArrayList<>();
         for (final IStorageChannel<? extends IAEStack<?>> channel : AEApi.instance().storage().storageChannels()) {
             final ICellInventoryHandler<?> cellInventory = ECO_Expand$getCellInventory(stack, channel);
@@ -261,7 +266,10 @@ public abstract class MixinEStorageCellDrive {
             }
 
             found = true;
-            driveInv.setHandler(0, cellInventory);
+            if (!defaultHandlerSet || channel instanceof IItemStorageChannel) {
+                driveInv.setHandler(0, cellInventory);
+                defaultHandlerSet = true;
+            }
             final ECellDriveWatcher<?> channelWatcher = ECO_Expand$createWatcher(cellInventory, channel);
             if (watcher == null) {
                 watcher = channelWatcher;
@@ -281,10 +289,70 @@ public abstract class MixinEStorageCellDrive {
         ci.cancel();
     }
 
+    @Inject(method = "onAssembled", at = @At("TAIL"))
+    private void ECO_Expand$rebuildUniversalHandlerAfterAssembly(final CallbackInfo ci) {
+        final ItemStack stack = driveInv.getStackInSlot(0);
+        if (!(stack.getItem() instanceof EStorageCellUniversal)) {
+            return;
+        }
+
+        isCached = false;
+        updateHandler(true);
+        ECO_Expand$refreshCellArrayAfterAssembly();
+    }
+
+    @Unique
+    private void ECO_Expand$refreshCellArrayAfterAssembly() {
+        try {
+            final Object controller = ((EStorageCellDrive) (Object) this).getController();
+            if (controller == null) {
+                return;
+            }
+            final Object channel = ECO_Expand$invoke(controller, "getChannel");
+            final Object proxy = ECO_Expand$invoke(channel, "getProxy");
+            if (proxy != null && Boolean.TRUE.equals(ECO_Expand$invoke(proxy, "isActive"))) {
+                ECO_Expand$postCellArrayUpdate(proxy);
+            }
+        } catch (final ReflectiveOperationException | RuntimeException exception) {
+            ECO_Expand.LOGGER.debug("Universal EStorage cell-array refresh is deferred until the controller is active.", exception);
+        }
+    }
+
     @Unique
     @SuppressWarnings({"rawtypes", "unchecked"})
     private Map<IStorageChannel<? extends IAEStack<?>>, ECellDriveWatcher<?>> ECO_Expand$getInventoryHandlers() {
         return (Map) inventoryHandlers;
+    }
+
+    @Unique
+    private boolean ECO_Expand$hasChannelHandler(final IStorageChannel<?> requestedChannel) {
+        if (inventoryHandlers.containsKey(requestedChannel)) {
+            return true;
+        }
+        for (final IStorageChannel<?> registeredChannel : inventoryHandlers.keySet()) {
+            if (registeredChannel == requestedChannel
+                    || registeredChannel.getClass() == requestedChannel.getClass()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Unique
+    private IMEInventoryHandler<?> ECO_Expand$findChannelHandler(final IStorageChannel<?> requestedChannel) {
+        final Object direct = inventoryHandlers.get(requestedChannel);
+        if (direct instanceof IMEInventoryHandler) {
+            return (IMEInventoryHandler<?>) direct;
+        }
+        for (final Map.Entry<IStorageChannel<? extends IAEStack<?>>, ?> entry : inventoryHandlers.entrySet()) {
+            final IStorageChannel<?> registeredChannel = entry.getKey();
+            if (registeredChannel == requestedChannel
+                    || registeredChannel.getClass() == requestedChannel.getClass()) {
+                final Object value = entry.getValue();
+                return value instanceof IMEInventoryHandler ? (IMEInventoryHandler<?>) value : null;
+            }
+        }
+        return null;
     }
 
     @Unique
@@ -299,57 +367,6 @@ public abstract class MixinEStorageCellDrive {
     private ECellDriveWatcher<?> ECO_Expand$createWatcher(final ICellInventoryHandler<?> cellInventory,
                                                         final IStorageChannel<? extends IAEStack<?>> channel) {
         return new ECellDriveWatcher(cellInventory, (IStorageChannel) channel, (EStorageCellDrive) (Object) this);
-    }
-
-    @Unique
-    private void ECO_Expand$postRemovalChanges(final ItemStack removedStack) {
-        final EStorageCellHandler handler = EStorageCellHandler.getHandler(removedStack);
-        if (handler == null) {
-            return;
-        }
-
-        try {
-            final Object controller = ((EStorageCellDrive) (Object) this).getController();
-            if (controller == null) {
-                return;
-            }
-
-            final Object channelPart = ECO_Expand$invoke(controller, "getChannel");
-            if (channelPart == null) {
-                return;
-            }
-
-            final Object proxy = ECO_Expand$invoke(channelPart, "getProxy");
-            if (proxy == null || !((Boolean) ECO_Expand$invoke(proxy, "isActive"))) {
-                return;
-            }
-
-            final IStorageGrid storageGrid = (IStorageGrid) ECO_Expand$invoke(proxy, "getStorage");
-            final IActionSource source = (IActionSource) ECO_Expand$invoke(channelPart, "getSource");
-            for (final IStorageChannel<? extends IAEStack<?>> channel : AEApi.instance().storage().storageChannels()) {
-                ECO_Expand$postRemovalChanges(storageGrid, source, handler, removedStack, channel);
-            }
-            ECO_Expand$postCellArrayUpdate(proxy);
-        } catch (final ReflectiveOperationException e) {
-            ECO_Expand.LOGGER.warn("Failed to post universal EStorage cell removal changes.", e);
-        }
-    }
-
-    @Unique
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private void ECO_Expand$postRemovalChanges(final IStorageGrid storageGrid, final IActionSource source, final EStorageCellHandler handler, final ItemStack removedStack, final IStorageChannel<? extends IAEStack<?>> channel) {
-        final ICellInventoryHandler cellInventory = handler.getCellInventory(removedStack, (EStorageCellDrive) (Object) this, (IStorageChannel) channel);
-        if (cellInventory == null) {
-            return;
-        }
-
-        final IItemList changes = ((IStorageChannel) channel).createList();
-        cellInventory.getAvailableItems(changes);
-        for (final Object object : changes) {
-            final IAEStack stack = (IAEStack) object;
-            stack.setStackSize(-stack.getStackSize());
-        }
-        storageGrid.postAlterationOfStoredItems(channel, changes, source);
     }
 
     @Unique

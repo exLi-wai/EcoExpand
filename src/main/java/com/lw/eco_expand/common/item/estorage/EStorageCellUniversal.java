@@ -84,6 +84,16 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
         return uuid;
     }
 
+    @Nullable
+    public static UUID getUuid(final ItemStack stack) {
+        if (stack == null) {
+            return null;
+        }
+
+        final NBTTagCompound tag = stack.getTagCompound();
+        return tag != null && tag.hasUniqueId(NBT_UUID) ? tag.getUniqueId(NBT_UUID) : null;
+    }
+
     public static UUID getOrCreateUuid(final ItemStack stack, final ISaveProvider saveProvider) {
         final UUID uuid = getOrCreateUuid(stack);
         final String owner = getOwnerKey(saveProvider);
@@ -222,6 +232,11 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
         return AEApi.instance().storage().getStorageChannel(IItemStorageChannel.class);
     }
 
+    @Override
+    public boolean storableInStorageCell() {
+        return true;
+    }
+
     public UniversalStorageStats getStats(final ItemStack stack) {
         return getStats(stack, null);
     }
@@ -324,7 +339,7 @@ public class EStorageCellUniversal extends EStorageCell<IAEItemStack> {
     }
 
     @Nullable
-    private static World getRememberedWorld(final ItemStack stack) {
+    public static World getRememberedWorld(final ItemStack stack) {
         final NBTTagCompound tag = stack.getTagCompound();
         if (tag == null || !tag.hasKey(NBT_DIMENSION, 3)) {
             return null;

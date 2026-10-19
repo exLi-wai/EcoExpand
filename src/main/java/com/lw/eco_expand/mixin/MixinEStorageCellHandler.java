@@ -4,6 +4,7 @@ import appeng.api.storage.ICellInventoryHandler;
 import appeng.api.storage.ISaveProvider;
 import appeng.api.storage.IStorageChannel;
 import appeng.api.storage.data.IAEStack;
+import appeng.core.features.registries.cell.BasicCellHandler;
 import com.lw.eco_expand.common.estorage.universal.UniversalEStorageCellHandler;
 import com.lw.eco_expand.common.item.estorage.EStorageCellUniversal;
 import github.kasuminova.ecoaeextension.common.estorage.EStorageCellHandler;
@@ -13,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(value = EStorageCellHandler.class, remap = false)
+@Mixin(value = {BasicCellHandler.class, EStorageCellHandler.class}, remap = false)
 public abstract class MixinEStorageCellHandler {
 
     @Inject(method = "getCellInventory", at = @At("HEAD"), cancellable = true)
